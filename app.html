@@ -28,7 +28,7 @@
             <button onclick="showSection('dashboard')" class="nav-btn px-4 py-2 rounded-lg">Dashboard</button>
             <button onclick="showSection('playDates')" class="nav-btn px-4 py-2 rounded-lg">Play Dates</button>
             <button onclick="showSection('players')" class="nav-btn px-4 py-2 rounded-lg">Players</button>
-            <button onclick="showSection('courts')" class="nav-btn px-4 py-2 rounded-lg">Courts</button>
+            <button onclick="showSection('courts')" class="nav-btn px-4 py-2 rounded-lg">Locations</button>
         </nav>
 
         <!-- Content Sections -->
@@ -72,9 +72,9 @@
             <!-- Courts Section -->
             <section id="courts" class="section hidden">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Courts</h2>
+                    <h2 class="text-xl font-bold">Locations</h2>
                     <button onclick="showModal('addCourtModal')" class="btn-primary">
-                        + Add Court
+                        + Add Location
                     </button>
                 </div>
                 <div id="courtsList"></div>
@@ -142,31 +142,31 @@
     <div id="addCourtModal" class="modal">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Add New Court</h2>
+                <h2 class="text-xl font-bold">Add New Location</h2>
                 <button onclick="hideModal('addCourtModal')" class="text-gray-500">&times;</button>
             </div>
             <form id="addCourtForm" class="space-y-4">
                 <div>
-                    <label class="block mb-1">Court Name</label>
-                    <input type="text" id="courtName" required>
+                    <label class="block mb-1">Location Name</label>
+                    <input type="text" id="courtName" class="form-input" required>
                 </div>
                 <div>
                     <label class="block mb-1">Address</label>
-                    <input type="text" id="courtAddress" required>
+                    <input type="text" id="courtAddress" class="form-input" required>
                 </div>
                 <div>
                     <label class="block mb-1">City</label>
-                    <input type="text" id="courtCity" required>
+                    <input type="text" id="courtCity" class="form-input" required>
                 </div>
                 <div>
                     <label class="block mb-1">State</label>
-                    <input type="text" id="courtState" required>
+                    <input type="text" id="courtState" class="form-input" required>
                 </div>
                 <div>
                     <label class="block mb-1">ZIP Code</label>
-                    <input type="text" id="courtZip" required>
+                    <input type="text" id="courtZip" class="form-input" required>
                 </div>
-                <button type="submit" class="btn-primary w-full">Add Court</button>
+                <button type="submit" class="btn-primary w-full">Add Location</button>on>
             </form>
         </div>
     </div>
