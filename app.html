@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Danville Pickleball Pals</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <!-- Add to Calendar Button -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100">
@@ -35,6 +36,20 @@
         <div class="container mx-auto px-4">
             <!-- Dashboard Section -->
             <section id="dashboard" class="section">
+                <!-- Add this tip message -->
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <span class="text-blue-500">💡</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                Tip: Consider editing your player profile to add your self-rating.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white rounded-lg shadow p-4 mb-4">
                     <h2 class="text-xl font-bold mb-4">Upcoming Play Dates</h2>
                     <div id="upcomingPlayDates"></div>
@@ -243,8 +258,9 @@
                 <div>
                     <div class="flex items-center gap-2">
                         <label class="block mb-1">Skill Rating</label>
-                        <button type="button" onclick="showRatingInfo()" class="text-gray-500 hover:text-green-600">
-                            <span class="icon">❔</span>
+                                               <button type="button" onclick="showRatingInfo()" 
+                            class="rounded-full bg-gray-200 w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-300 hover:text-gray-800">
+                            ?
                         </button>
                     </div>
                     <select id="editPlayerRating" class="w-full" required>
@@ -289,9 +305,16 @@
                     <label class="block mb-1">Time</label>
                     <input type="time" id="editPlayDateTime" required>
                 </div>
-                <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                    <span class="icon">➕</span>Update Play Date
-                </button>
+                <div class="flex gap-4">
+                    <button type="submit" class="btn-primary flex-1 flex items-center justify-center gap-2 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                        <span class="icon">✅</span>Update Play Date
+                    </button>
+                    <button type="button" 
+                            onclick="deletePlayDate(document.getElementById('editPlayDateId').value); hideModal('editPlayDateModal')"
+                            class="bg-red-600 text-white flex-1 flex items-center justify-center gap-2 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 hover:bg-red-700">
+                        <span class="icon">🗑️</span>Delete
+                    </button>
+                </div>
             </form>
         </div>
     </div>

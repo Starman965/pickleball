@@ -1,18 +1,18 @@
 /* Base Styles */
 input, select {
-    @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500;
+    @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500;
 }
 
 /* Button Styles */
 .btn-primary {
-    @apply bg-green-600 text-white font-semibold
+    @apply bg-blue-600 text-white font-semibold
     py-2 px-4 rounded-lg
     shadow-md hover:shadow-lg
-    hover:bg-green-700 
+    hover:bg-blue-700 
     transform hover:-translate-y-0.5
     transition-all duration-200
-    focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
-    active:bg-green-800;
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+    active:bg-blue-800;
 }
 
 .btn-secondary {
@@ -21,11 +21,11 @@ input, select {
 
 /* Navigation */
 .nav-btn {
-    @apply text-gray-600 hover:text-green-600 hover:bg-gray-100 transition-colors duration-200;
+    @apply text-gray-600 hover:text-blue-600 hover:bg-gray-100 transition-colors duration-200;
 }
 
 .nav-btn.active {
-    @apply bg-gray-100 text-green-600;
+    @apply bg-gray-100 text-blue-600;
 }
 
 /* Modal Styles */
@@ -55,13 +55,12 @@ input, select {
     padding: 2rem;
     width: 90%;
     max-width: 500px;
-    border-radius: 0.5rem;
-    position: relative;
 }
 
 /* Card Styles */
 .card {
     @apply bg-white rounded-lg shadow-md p-4 mb-4;
+    margin-bottom: 1rem;
 }
 
 .card-header {
@@ -69,7 +68,7 @@ input, select {
 }
 
 .card-title {
-    @apply text-lg font-bold text-green-600;
+    @apply text-lg font-bold text-blue-600;
 }
 
 .card-badge {
@@ -140,4 +139,43 @@ input, select {
     to {
         opacity: 1;
     }
+}
+
+/* Player Card Specific Styles */
+.player-rating-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium;
+}
+
+.player-card-hover {
+    @apply transition-all duration-200 ease-in-out;
+    @apply hover:-translate-y-1 hover:shadow-lg;
+}
+
+/* Tip Message Styles */
+.tip-message {
+    @apply bg-blue-50 border-l-4 border-blue-500 p-4 mb-4;
+    @apply flex items-center space-x-3;
+}
+
+/* Rating Badge */
+.rating-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium;
+}
+
+.rating-badge.with-rating {
+    @apply bg-blue-100 text-blue-800;
+}
+
+.rating-badge.no-rating {
+    @apply bg-gray-100 text-gray-800;
+}
+
+/* Calendar Button Customization */
+add-to-calendar-button {
+    --btn-background: #2563eb;
+    --btn-background-hover: #1d4ed8;
+    --btn-border: #2563eb;
+    --btn-text: #fff;
+    --btn-shadow: rgba(0, 0, 0, 0.1);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }

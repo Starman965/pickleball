@@ -208,6 +208,19 @@ async function handleEditPlayDateSubmit(e) {
     }
 }
 
+async function deletePlayDate(playDateId) {
+    if (!confirm('Are you sure you want to delete this play date? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        await remove(ref(db, `playDates/${playDateId}`));
+        // The UI will update automatically through the onValue listener
+    } catch (error) {
+        alert(`Failed to delete play date: ${error.message}`);
+    }
+}
+
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
     // Check if we're already logged in
@@ -373,18 +386,11 @@ function renderPlayDateCard(playDate) {
     const court = courts.find(c => c.id === playDate.courtId) || {};
     const attendingPlayers = playDate.players || [];
     
-    // Format time to include AM/PM and PT
-    const timeFormat = new Date(`2000-01-01T${playDate.time}`).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-    });
-    const formattedTime = `${timeFormat} PT`;
-    
-    // Find the creator's name
+    // Find the creator's name first
     const creator = players.find(p => p.email === playDate.createdBy);
     const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'Unknown';
     
+    // Get player names for display
     const playerNames = attendingPlayers
         .map(uid => {
             const player = players.find(p => p.email === uid);
@@ -392,29 +398,39 @@ function renderPlayDateCard(playDate) {
         })
         .join(', ');
     
+    // Format time to include AM/PM and PT
+    const timeFormat = new Date(`2000-01-01T${playDate.time}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+    const formattedTime = `${timeFormat} PT`;
+
     return `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">${court.name || 'Unknown Court'}</h3>
+            <h3 class="card-title font-bold text-lg">${court.name || 'Unknown Court'}</h3>
                 <div class="flex gap-2 items-center">
                     <span class="card-badge">Court(s): ${playDate.courtNumbers}</span>
-                    ${playDate.createdBy === auth.currentUser.email ? 
-                        `<button onclick="editPlayDate('${playDate.id}')" class="text-gray-500 hover:text-green-600">
-                            <span class="icon">✏️</span>
-                        </button>` 
-                        : ''
-                    }
                 </div>
-            </div>
-            <div class="space-y-2">
-                <p class="text-gray-600">
-                    <span class="icon">📆</span>${new Date(playDate.date).toLocaleDateString()} at ${formattedTime}
-                </p>
-                <p class="text-gray-600">
+                 <p class="text-gray-600">
                     <span class="icon">🎾</span>${court.address}, ${court.city}
                 </p>
-                <p class="text-gray-600">
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-600">
+                        <span class="icon">📆</span>${new Date(playDate.date).toLocaleDateString()} at ${formattedTime}
+                    </p>
+                </div>
+               
+                <p class="text-gray-600 flex items-center gap-2">
                     <span class="icon">👤</span>Created by: ${creatorName}
+                    ${playDate.createdBy === auth.currentUser.email ? `
+                        <button onclick="editPlayDate('${playDate.id}')" class="text-gray-500 hover:text-blue-600">
+                            <span class="icon">✏️</span>
+                        </button>
+                    ` : ''}
                 </p>
                 <div class="mt-2">
                     <p class="text-sm font-semibold">Players (${attendingPlayers.length}):</p>
@@ -427,7 +443,7 @@ function renderPlayDateCard(playDate) {
                              <span class="icon">⛔</span>Leave Play Date
                            </button>`
                         : `<button onclick="joinPlayDate('${playDate.id}')" 
-                             class="w-full px-4 py-2 text-white bg-green-500 hover:bg-green-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                             class="w-full px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
                              <span class="icon">✅</span>Join Play Date
                            </button>`
                     }
@@ -481,21 +497,43 @@ function renderPlayerCard(player) {
     };
 
     const isCurrentUser = auth.currentUser && player.email === auth.currentUser.email;
+    const ratingClass = player.rating ? 'bg-blue-50' : 'bg-gray-50';
 
     return `
-        <div class="card">
+        <div class="card transform transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${ratingClass}">
             <div class="list-item-content">
-                <div>
-                    <h3 class="font-bold">${player.firstName} ${player.lastName}</h3>
-                    <p class="text-gray-600">${player.email}</p>
-                    <p class="text-gray-600">${player.mobile}</p>
-                    ${player.rating ? `<p class="text-gray-600 font-semibold">Self Rating: ${player.rating} (${ratingLabels[player.rating]})</p>` : ''}
+                <div class="space-y-2">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-bold text-lg text-gray-900">${player.firstName} ${player.lastName}</h3>
+                        ${isCurrentUser ? `
+                            <button onclick="editPlayer('${player.id}')" 
+                                class="text-gray-500 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50">
+                                <span class="icon">✏️</span>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="text-sm space-y-1">
+                        <p class="text-gray-600 flex items-center">
+                            <span class="icon">📧</span>${player.email}
+                        </p>
+                        <p class="text-gray-600 flex items-center">
+                            <span class="icon">📱</span>${player.mobile}
+                        </p>
+                        ${player.rating ? `
+                            <div class="mt-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    Rating: ${player.rating} (${ratingLabels[player.rating]})
+                                </span>
+                            </div>
+                        ` : `
+                            <div class="mt-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                                    No rating set
+                                </span>
+                            </div>
+                        `}
+                    </div>
                 </div>
-                ${isCurrentUser ? `
-                    <button onclick="editPlayer('${player.id}')" class="text-gray-500 hover:text-green-600">
-                        <span class="icon">✏️</span>
-                    </button>
-                ` : ''}
             </div>
         </div>
     `;
@@ -510,7 +548,7 @@ function renderCourtCard(court) {
                     <p class="text-gray-600">${court.address}</p>
                     <p class="text-gray-600">${court.city}, ${court.state} ${court.zipCode}</p>
                 </div>
-                <button onclick="editCourt('${court.id}')" class="text-gray-500 hover:text-green-600">
+                <button onclick="editCourt('${court.id}')" class="text-gray-500 hover:text-blue-600">
                     <span class="icon">✏️</span>
                 </button>
             </div>
@@ -565,6 +603,7 @@ window.logout = logout;
 window.editCourt = editCourt;
 window.editPlayer = editPlayer;
 window.editPlayDate = editPlayDate;
+window.deletePlayDate = deletePlayDate;
 
 // Add this function to show the rating info modal
 function showRatingInfo() {
