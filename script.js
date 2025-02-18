@@ -44,6 +44,7 @@ async function handlePlayerSubmit(e) {
         lastName: document.getElementById('playerLastName').value,
         email: document.getElementById('playerEmail').value,
         mobile: document.getElementById('playerMobile').value,
+        rating: document.getElementById('playerRating').value,
         createdAt: new Date().toISOString()
     };
 
@@ -124,6 +125,7 @@ async function editPlayer(playerId) {
     document.getElementById('editPlayerLastName').value = player.lastName;
     document.getElementById('editPlayerEmail').value = player.email;
     document.getElementById('editPlayerMobile').value = player.mobile;
+    document.getElementById('editPlayerRating').value = player.rating || '2.0';
 
     showModal('editPlayerModal');
 }
@@ -136,6 +138,7 @@ async function handleEditPlayerSubmit(e) {
         lastName: document.getElementById('editPlayerLastName').value,
         email: document.getElementById('editPlayerEmail').value,
         mobile: document.getElementById('editPlayerMobile').value,
+        rating: document.getElementById('editPlayerRating').value,
         updatedAt: new Date().toISOString()
     };
 
@@ -448,6 +451,15 @@ async function leavePlayDate(playDateId) {
 
 // Render Functions
 function renderPlayerCard(player) {
+    const ratingLabels = {
+        '2.0': 'Beginner',
+        '3.0': 'Intermediate',
+        '3.5': 'Advanced Intermediate',
+        '4.0': 'Advanced',
+        '4.5': 'Highly Skilled',
+        '5.0': 'Expert Level'
+    };
+
     return `
         <div class="card">
             <div class="list-item-content">
@@ -455,6 +467,7 @@ function renderPlayerCard(player) {
                     <h3 class="font-bold">${player.firstName} ${player.lastName}</h3>
                     <p class="text-gray-600">${player.email}</p>
                     <p class="text-gray-600">${player.mobile}</p>
+                    ${player.rating ? `<p class="text-green-600 font-semibold">${player.rating} (${ratingLabels[player.rating]})</p>` : ''}
                 </div>
                 <button onclick="editPlayer('${player.id}')" class="text-gray-500 hover:text-green-600">
                     <span class="icon">✏️</span>
@@ -528,3 +541,53 @@ window.logout = logout;
 window.editCourt = editCourt;
 window.editPlayer = editPlayer;
 window.editPlayDate = editPlayDate;
+
+// Add this function to show the rating info modal
+function showRatingInfo() {
+    const ratingInfo = `
+        <div class="space-y-4">
+            <div>
+                <h3 class="font-bold">2.0 (Beginner)</h3>
+                <p>Just learning the game. Can hit basic shots but struggles with consistency. Lacks control and strategy.</p>
+            </div>
+            <div>
+                <h3 class="font-bold">3.0 (Intermediate)</h3>
+                <p>Can sustain short rallies with medium pace. Beginning to understand basic strategies like dinking and positioning. Struggles with shot consistency and unforced errors.</p>
+            </div>
+            <div>
+                <h3 class="font-bold">3.5 (Advanced Intermediate)</h3>
+                <p>More consistent with basic shots (forehand, backhand, serve, and volley). Understands court positioning and basic strategy. Beginning to add spin and placement. Can anticipate opponents' shots but lacks high-level execution.</p>
+            </div>
+            <div>
+                <h3 class="font-bold">4.0 (Advanced)</h3>
+                <p>Controls pace and placement of shots. Has reliable third-shot drops, dinks, and volleys. Strategically moves and adapts during games. Executes offensive and defensive shots with confidence.</p>
+            </div>
+            <div>
+                <h3 class="font-bold">4.5 (Highly Skilled)</h3>
+                <p>Strong shot variety and control. Can create offensive opportunities with well-placed dinks and drives. Consistently wins against lower-rated players. Excellent anticipation and reaction speed.</p>
+            </div>
+            <div>
+                <h3 class="font-bold">5.0+ (Expert)</h3>
+                <p>Plays at an elite level with high consistency, power, and precision. Competes in high-level tournaments. Has mastered all aspects of the game, including spin, strategy, and fast-paced exchanges.</p>
+            </div>
+        </div>
+    `;
+
+    // Create and show a modal with the rating information
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+        <div class="modal-content max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Pickleball Skill Ratings</h2>
+                <button onclick="this.closest('.modal').remove()" class="text-gray-500">&times;</button>
+            </div>
+            ${ratingInfo}
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// Make the function globally available
+window.showRatingInfo = showRatingInfo;

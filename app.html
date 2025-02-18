@@ -228,6 +228,22 @@
                     <label class="block mb-1">Mobile</label>
                     <input type="tel" id="editPlayerMobile" class="w-full" required>
                 </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <label class="block mb-1">Skill Rating</label>
+                        <button type="button" onclick="showRatingInfo()" class="text-gray-500 hover:text-green-600">
+                            <span class="icon">❔</span>
+                        </button>
+                    </div>
+                    <select id="editPlayerRating" class="w-full" required>
+                        <option value="2.0">2.0 (Beginner)</option>
+                        <option value="3.0">3.0 (Intermediate)</option>
+                        <option value="3.5">3.5 (Advanced Intermediate)</option>
+                        <option value="4.0">4.0 (Advanced)</option>
+                        <option value="4.5">4.5 (Highly Skilled)</option>
+                        <option value="5.0">5.0+ (Expert Level)</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn-primary w-full">Update Player</button>
             </form>
         </div>
