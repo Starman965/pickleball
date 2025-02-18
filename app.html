@@ -96,7 +96,7 @@
                 </div>
                 <div>
                     <label class="block mb-1">Court Number(s)</label>
-                    <input type="text" id="courtNumbers" placeholder="e.g., 1, 2, 3" required>
+                    <input type="text" id="courtNumbers" placeholder="e.g., 1, 2, 3-5, TBD">
                 </div>
                 <div>
                     <label class="block mb-1">Date</label>
@@ -106,7 +106,9 @@
                     <label class="block mb-1">Time</label>
                     <input type="time" id="playTime" required>
                 </div>
-                <button type="submit" class="btn-primary w-full">Schedule Play Date</button>
+                <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                    <span class="icon">➕</span>Schedule Play Date
+                </button>
             </form>
         </div>
     </div>
@@ -143,7 +145,13 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Add New Location</h2>
-                <button onclick="hideModal('addCourtModal')" class="text-gray-500">&times;</button>
+                                <button onclick="hideModal('addCourtModal')" 
+                    class="rounded-full w-8 h-8 flex items-center justify-center 
+                           bg-gray-200 text-gray-600 hover:bg-gray-300 
+                           transition-colors duration-200 
+                           focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    &times;
+                </button>
             </div>
             <form id="addCourtForm" class="space-y-4">
                 <div>
@@ -166,7 +174,9 @@
                     <label class="block mb-1">ZIP Code</label>
                     <input type="text" id="courtZip" class="form-input" required>
                 </div>
-                <button type="submit" class="btn-primary w-full">Add Location</button>on>
+                <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                    <span class="icon">➕</span>Add Location
+                </button>
             </form>
         </div>
     </div>
@@ -199,7 +209,9 @@
                     <label class="block mb-1">ZIP Code</label>
                     <input type="text" id="editCourtZip" required>
                 </div>
-                <button type="submit" class="btn-primary w-full">Update Court</button>
+                <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                    <span class="icon">➕</span>Update Location
+                </button>
             </form>
         </div>
     </div>
@@ -244,7 +256,9 @@
                         <option value="5.0">5.0+ (Expert Level)</option>
                     </select>
                 </div>
-                <button type="submit" class="btn-primary w-full">Update Player</button>
+                <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                    <span class="icon">➕</span>Update Player
+                </button>
             </form>
         </div>
     </div>
@@ -265,7 +279,7 @@
                 </div>
                 <div>
                     <label class="block mb-1">Court Number(s)</label>
-                    <input type="text" id="editPlayDateCourtNumbers" placeholder="e.g., 1, 2, 3" required>
+                    <input type="text" id="editPlayDateCourtNumbers" placeholder="e.g., 1, 2, 3-5, TBD">
                 </div>
                 <div>
                     <label class="block mb-1">Date</label>
@@ -275,7 +289,9 @@
                     <label class="block mb-1">Time</label>
                     <input type="time" id="editPlayDateTime" required>
                 </div>
-                <button type="submit" class="btn-primary w-full">Update Play Date</button>
+                <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                    <span class="icon">➕</span>Update Play Date
+                </button>
             </form>
         </div>
     </div>
