@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DPG Poker Admin</title>
+    <link rel="stylesheet" href="login_styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-form">
+            <div class="centered-logo">
+                <img src="dpg.png" alt="DPG Logo" class="login-logo">
+            </div>
+            
+            <!-- Login View -->
+            <div id="loginView">
+                <h2>Danville Pickleball Pals</h2>
+                <input type="email" id="emailInput" placeholder="Email" required>
+                <input type="password" id="passwordInput" placeholder="Password" required>
+                <button id="loginButton" class="submit-btn">Login</button>
+                <p class="text-center">
+                    <button id="forgotPasswordBtn" class="link-button">Forgot Password?</button>
+                </p>
+                <p class="text-center">
+                    Don't have an account? 
+                    <button id="showSignupBtn" class="link-button">Sign up</button>
+                </p>
+            </div>
+            
+            <!-- Signup View -->
+            <div id="signupView" style="display: none;">
+                <h2>Create Account</h2>
+                <form id="signupForm" novalidate>
+                    <input type="text" id="firstNameInput" placeholder="First Name" required>
+                    <div class="error-message" id="firstNameError"></div>
+                    
+                    <input type="text" id="lastNameInput" placeholder="Last Name" required>
+                    <div class="error-message" id="lastNameError"></div>
+                    
+                    <input type="email" id="signupEmailInput" placeholder="Email" required>
+                    <div class="error-message" id="emailError"></div>
+                    
+                    <input type="tel" id="phoneInput" placeholder="Phone (xxx-xxx-xxxx)" required>
+                    <div class="error-message" id="phoneError"></div>
+                    
+                    <input type="password" id="signupPasswordInput" placeholder="Password" required>
+                    <div class="error-message" id="passwordError"></div>
+                    
+                    <input type="password" id="confirmPasswordInput" placeholder="Confirm Password" required>
+                    <div class="error-message" id="confirmPasswordError"></div>
+                    
+                    <button type="submit" id="signupButton" class="submit-btn">Create Account</button>
+                </form>
+                <p class="text-center">
+                    Already have an account? 
+                    <button id="showLoginBtn" class="link-button">Login</button>
+                </p>
+            </div>
+            
+            <!-- Password Reset View -->
+            <div id="resetPasswordView" style="display: none;">
+                <h2>Reset Password</h2>
+                <p>Enter your email address and we'll send you a password reset link.</p>
+                <input type="email" id="resetEmailInput" placeholder="Email" required>
+                <button id="resetPasswordSubmitBtn" class="submit-btn">Send Reset Link</button>
+                <p>
+                    <button id="backToLoginBtn" class="link-button">Back to Login</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail } 
+        from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, push, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { firebaseConfig } from './firebase-config.js';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // View switching functions
+        function showView(viewId) {
+            ['loginView', 'signupView', 'resetPasswordView'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            document.getElementById(viewId).style.display = 'block';
+        }
+
+        // Phone number formatting
+        function formatPhoneNumber(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 10) value = value.slice(0, 10);
+            if (value.length >= 6) {
+                value = value.slice(0, 3) + '-' + value.slice(3, 6) + '-' + value.slice(6);
+            } else if (value.length >= 3) {
+                value = value.slice(0, 3) + '-' + value.slice(3);
+            }
+            input.value = value;
+        }
+
+        // Validation functions
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        function validatePhone(phone) {
+            const re = /^\d{3}-\d{3}-\d{4}$/;
+            return re.test(phone);
+        }
+
+        function validatePassword(password) {
+            return password.length >= 6;
+        }
+
+        function validateForm() {
+            let isValid = true;
+            const errors = {
+                firstNameError: '',
+                lastNameError: '',
+                emailError: '',
+                phoneError: '',
+                passwordError: '',
+                confirmPasswordError: ''
+            };
+
+            const firstName = document.getElementById('firstNameInput').value;
+            const lastName = document.getElementById('lastNameInput').value;
+            const email = document.getElementById('signupEmailInput').value;
+            const phone = document.getElementById('phoneInput').value;
+            const password = document.getElementById('signupPasswordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+
+            if (!firstName) {
+                errors.firstNameError = 'First name is required';
+                isValid = false;
+            }
+
+            if (!lastName) {
+                errors.lastNameError = 'Last name is required';
+                isValid = false;
+            }
+
+            if (!validateEmail(email)) {
+                errors.emailError = 'Please enter a valid email address';
+                isValid = false;
+            }
+
+            if (!validatePhone(phone)) {
+                errors.phoneError = 'Please enter a valid phone number (xxx-xxx-xxxx)';
+                isValid = false;
+            }
+
+            if (!validatePassword(password)) {
+                errors.passwordError = 'Password must be at least 6 characters';
+                isValid = false;
+            }
+
+            if (password !== confirmPassword) {
+                errors.confirmPasswordError = 'Passwords do not match';
+                isValid = false;
+            }
+
+            // Display errors
+            Object.keys(errors).forEach(key => {
+                document.getElementById(key).textContent = errors[key];
+            });
+
+            return isValid;
+        }
+
+        // Event Listeners
+        document.getElementById('showSignupBtn').addEventListener('click', () => showView('signupView'));
+        document.getElementById('showLoginBtn').addEventListener('click', () => showView('loginView'));
+        document.getElementById('forgotPasswordBtn').addEventListener('click', () => showView('resetPasswordView'));
+        document.getElementById('backToLoginBtn').addEventListener('click', () => showView('loginView'));
+
+        // Phone input formatting
+        document.getElementById('phoneInput').addEventListener('input', (e) => formatPhoneNumber(e.target));
+
+        // Signup form submission
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!validateForm()) return;
+
+            const signupButton = document.getElementById('signupButton');
+            signupButton.disabled = true;
+
+            try {
+                const email = document.getElementById('signupEmailInput').value;
+                const password = document.getElementById('signupPasswordInput').value;
+                const firstName = document.getElementById('firstNameInput').value;
+                const lastName = document.getElementById('lastNameInput').value;
+                const phone = document.getElementById('phoneInput').value;
+
+                // Create the authentication user first
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                console.log('Auth account created successfully');
+
+                // Create the player data
+                const playerData = {
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    mobile: phone,
+                    createdAt: new Date().toISOString(),
+                    uid: userCredential.user.uid
+                };
+
+                // Save player data with a promise
+                const saveData = async () => {
+                    const playersRef = ref(db, 'players');
+                    const newPlayerRef = push(playersRef);
+                    await set(newPlayerRef, playerData);
+                    
+                    // Verify the data was written
+                    const snapshot = await get(newPlayerRef);
+                    if (!snapshot.exists()) {
+                        throw new Error('Failed to verify player data');
+                    }
+                    return true;
+                };
+
+                // Wait for data to be saved before redirecting
+                await saveData();
+                console.log('Player data saved and verified successfully');
+                
+                // Use a slight delay before redirect to ensure database operation completes
+                await new Promise(resolve => setTimeout(resolve, 500));
+                window.location.href = 'app.html';
+
+            } catch (error) {
+                console.error('Error during signup:', error);
+                alert('Signup error: ' + error.message);
+                
+                if (auth.currentUser) {
+                    try {
+                        await auth.currentUser.delete();
+                        console.log('Cleaned up auth account after failed database save');
+                    } catch (cleanupError) {
+                        console.error('Error cleaning up auth account:', cleanupError);
+                    }
+                }
+                signupButton.disabled = false;
+            }
+        });
+
+        // Auth state observer
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Check if the player data exists before redirecting
+                try {
+                    const playersRef = ref(db, 'players');
+                    const snapshot = await get(playersRef);
+                    const players = snapshot.val() || {};
+                    
+                    // Look for the player with matching email
+                    const playerExists = Object.values(players).some(player => player.email === user.email);
+                    
+                    if (playerExists) {
+                        window.location.href = 'app.html';
+                    }
+                } catch (error) {
+                    console.error('Error checking player data:', error);
+                }
+            }
+        });
+
+        // Login handler
+        document.getElementById('loginButton').addEventListener('click', async () => {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.href = 'app.html';
+            } catch (error) {
+                console.error("Login error:", error.message);
+                alert("Login failed: " + error.message);
+            }
+        });
+
+        // Password reset handler
+        document.getElementById('resetPasswordSubmitBtn').addEventListener('click', async () => {
+            const email = document.getElementById('resetEmailInput').value;
+            try {
+                await sendPasswordResetEmail(auth, email);
+                alert('Password reset email sent! Check your inbox.');
+                document.getElementById('loginView').style.display = 'block';
+                document.getElementById('resetPasswordView').style.display = 'none';
+            } catch (error) {
+                console.error("Error sending reset email:", error);
+                alert(error.message || "Error sending reset email");
+            }
+        });
+
+        // Allow form submission with Enter key
+        document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('loginButton').click();
+            }
+        });
+    </script>
+</body>
+</html>

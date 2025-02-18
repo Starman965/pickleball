@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pickle Pals</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100">
+
+    <!-- Main App Section -->
+    <main class="hidden">
+        <!-- Header -->
+        <header class="bg-white p-4 shadow-md">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl text-black-600 font-bold">Danville Pickleball Pals</h1>
+                <button onclick="logout()" class="btn-secondary">Sign Out</button>
+            </div>
+            <div id="currentUserDisplay" class="text-sm text-gray-600 flex items-center gap-2">
+                <span class="icon">👤</span>
+                <span id="currentUserName">Loading...</span>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex justify-around bg-white p-4 mb-4">
+            <button onclick="showSection('dashboard')" class="nav-btn px-4 py-2 rounded-lg">Dashboard</button>
+            <button onclick="showSection('playDates')" class="nav-btn px-4 py-2 rounded-lg">Play Dates</button>
+            <button onclick="showSection('players')" class="nav-btn px-4 py-2 rounded-lg">Players</button>
+            <button onclick="showSection('courts')" class="nav-btn px-4 py-2 rounded-lg">Courts</button>
+        </nav>
+
+        <!-- Content Sections -->
+        <div class="container mx-auto px-4">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section">
+                <div class="bg-white rounded-lg shadow p-4 mb-4">
+                    <h2 class="text-xl font-bold mb-4">Upcoming Play Dates</h2>
+                    <div id="upcomingPlayDates"></div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-4 mb-4">
+                    <h2 class="text-xl font-bold mb-4">Recent Players</h2>
+                    <div id="recentPlayers"></div>
+                </div>
+            </section>
+
+            <!-- Play Dates Section -->
+            <section id="playDates" class="section hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Play Dates</h2>
+                    <button onclick="showModal('addPlayDateModal')" class="btn-primary">
+                        + Schedule Play Date
+                    </button>
+                </div>
+                <div id="playDatesList"></div>
+            </section>
+
+            <!-- Players Section -->
+            <section id="players" class="section hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Players</h2>
+                    <button onclick="showModal('addPlayerModal')" class="btn-primary">
+                        + Add Player
+                    </button>
+                </div>
+                <div id="playersList"></div>
+            </section>
+
+            <!-- Courts Section -->
+            <section id="courts" class="section hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Courts</h2>
+                    <button onclick="showModal('addCourtModal')" class="btn-primary">
+                        + Add Court
+                    </button>
+                </div>
+                <div id="courtsList"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="addPlayDateModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Schedule Play Date</h2>
+                <button onclick="hideModal('addPlayDateModal')" class="text-gray-500">&times;</button>
+            </div>
+            <form id="addPlayDateForm" class="space-y-4">
+                <div>
+                    <label class="block mb-1">Court</label>
+                    <select id="courtSelect" required></select>
+                </div>
+                <div>
+                    <label class="block mb-1">Court Number(s)</label>
+                    <input type="text" id="courtNumbers" placeholder="e.g., 1, 2, 3" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Date</label>
+                    <input type="date" id="playDate" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Time</label>
+                    <input type="time" id="playTime" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Schedule Play Date</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addPlayerModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Add New Player</h2>
+                <button onclick="hideModal('addPlayerModal')" class="text-gray-500">&times;</button>
+            </div>
+            <form id="addPlayerForm" class="space-y-4">
+                <div>
+                    <label class="block mb-1">First Name</label>
+                    <input type="text" id="playerFirstName" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Last Name</label>
+                    <input type="text" id="playerLastName" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Email</label>
+                    <input type="email" id="playerEmail" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Mobile</label>
+                    <input type="tel" id="playerMobile" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Add Player</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addCourtModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Add New Court</h2>
+                <button onclick="hideModal('addCourtModal')" class="text-gray-500">&times;</button>
+            </div>
+            <form id="addCourtForm" class="space-y-4">
+                <div>
+                    <label class="block mb-1">Court Name</label>
+                    <input type="text" id="courtName" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Address</label>
+                    <input type="text" id="courtAddress" required>
+                </div>
+                <div>
+                    <label class="block mb-1">City</label>
+                    <input type="text" id="courtCity" required>
+                </div>
+                <div>
+                    <label class="block mb-1">State</label>
+                    <input type="text" id="courtState" required>
+                </div>
+                <div>
+                    <label class="block mb-1">ZIP Code</label>
+                    <input type="text" id="courtZip" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Add Court</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editCourtModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Edit Court</h2>
+                <button onclick="hideModal('editCourtModal')" class="text-gray-500">&times;</button>
+            </div>
+            <form id="editCourtForm" class="space-y-4">
+                <input type="hidden" id="editCourtId">
+                <div>
+                    <label class="block mb-1">Court Name</label>
+                    <input type="text" id="editCourtName" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Address</label>
+                    <input type="text" id="editCourtAddress" required>
+                </div>
+                <div>
+                    <label class="block mb-1">City</label>
+                    <input type="text" id="editCourtCity" required>
+                </div>
+                <div>
+                    <label class="block mb-1">State</label>
+                    <input type="text" id="editCourtState" required>
+                </div>
+                <div>
+                    <label class="block mb-1">ZIP Code</label>
+                    <input type="text" id="editCourtZip" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Update Court</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editPlayerModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Edit Player</h2>
+                <button onclick="hideModal('editPlayerModal')" class="text-gray-500">&times;</button>
+            </div>
+            <form id="editPlayerForm" class="space-y-4">
+                <input type="hidden" id="editPlayerId">
+                <div>
+                    <label class="block mb-1">First Name</label>
+                    <input type="text" id="editPlayerFirstName" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Last Name</label>
+                    <input type="text" id="editPlayerLastName" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Email</label>
+                    <input type="email" id="editPlayerEmail" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Mobile</label>
+                    <input type="tel" id="editPlayerMobile" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Update Player</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editPlayDateModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Edit Play Date</h2>
+                <button onclick="hideModal('editPlayDateModal')" class="text-gray-500">&times;</button>
+            </div>
+            <form id="editPlayDateForm" class="space-y-4">
+                <input type="hidden" id="editPlayDateId">
+                <div>
+                    <label class="block mb-1">Court</label>
+                    <select id="editPlayDateCourtSelect" required>
+                        <!-- Will be populated with courts -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-1">Court Number(s)</label>
+                    <input type="text" id="editPlayDateCourtNumbers" placeholder="e.g., 1, 2, 3" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Date</label>
+                    <input type="date" id="editPlayDateDate" required>
+                </div>
+                <div>
+                    <label class="block mb-1">Time</label>
+                    <input type="time" id="editPlayDateTime" required>
+                </div>
+                <button type="submit" class="btn-primary w-full">Update Play Date</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
+    
+    <!-- Application Script -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
