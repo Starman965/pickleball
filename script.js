@@ -408,8 +408,14 @@ function renderPlayDateCard(playDate) {
                 </div>
                 <div class="mt-4">
                     ${attendingPlayers.includes(auth.currentUser.email)
-                        ? `<button onclick="leavePlayDate('${playDate.id}')" class="btn-secondary w-full">Leave Play Date</button>`
-                        : `<button onclick="joinPlayDate('${playDate.id}')" class="btn-primary w-full">Join Play Date</button>`
+                        ? `<button onclick="leavePlayDate('${playDate.id}')" 
+                             class="w-full px-4 py-2 text-white bg-red-500 hover:bg-red-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                             <span class="icon">⛔</span>Leave Play Date
+                           </button>`
+                        : `<button onclick="joinPlayDate('${playDate.id}')" 
+                             class="w-full px-4 py-2 text-white bg-green-500 hover:bg-green-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                             <span class="icon">✅</span>Join Play Date
+                           </button>`
                     }
                 </div>
             </div>
@@ -467,7 +473,7 @@ function renderPlayerCard(player) {
                     <h3 class="font-bold">${player.firstName} ${player.lastName}</h3>
                     <p class="text-gray-600">${player.email}</p>
                     <p class="text-gray-600">${player.mobile}</p>
-                    ${player.rating ? `<p class="text-green-600 font-semibold">${player.rating} (${ratingLabels[player.rating]})</p>` : ''}
+                    ${player.rating ? `<p class="text-gray-600 font-semibold">Self Rating: ${player.rating} (${ratingLabels[player.rating]})</p>` : ''}
                 </div>
                 <button onclick="editPlayer('${player.id}')" class="text-gray-500 hover:text-green-600">
                     <span class="icon">✏️</span>
