@@ -345,7 +345,7 @@ function updateCourtSelect() {
     const editSelect = document.getElementById('editPlayDateCourtSelect');
     
     const options = `
-        <option value="">Select a court</option>
+        <option value="">Select a location</option>
         ${courts.map(court => `
             <option value="${court.id}">${court.name}</option>
         `).join('')}
@@ -397,7 +397,7 @@ function renderPlayDateCard(playDate) {
             <div class="card-header">
                 <h3 class="card-title">${court.name || 'Unknown Court'}</h3>
                 <div class="flex gap-2 items-center">
-                    <span class="card-badge">Court ${playDate.courtNumbers}</span>
+                    <span class="card-badge">Court(s): ${playDate.courtNumbers}</span>
                     ${playDate.createdBy === auth.currentUser.email ? 
                         `<button onclick="editPlayDate('${playDate.id}')" class="text-gray-500 hover:text-green-600">
                             <span class="icon">✏️</span>
@@ -408,10 +408,10 @@ function renderPlayDateCard(playDate) {
             </div>
             <div class="space-y-2">
                 <p class="text-gray-600">
-                    <span class="icon">📅</span>${new Date(playDate.date).toLocaleDateString()} at ${formattedTime}
+                    <span class="icon">📆</span>${new Date(playDate.date).toLocaleDateString()} at ${formattedTime}
                 </p>
                 <p class="text-gray-600">
-                    <span class="icon">📍</span>${court.address}, ${court.city}
+                    <span class="icon">🎾</span>${court.address}, ${court.city}
                 </p>
                 <p class="text-gray-600">
                     <span class="icon">👤</span>Created by: ${creatorName}
