@@ -119,6 +119,12 @@ async function editPlayer(playerId) {
     const player = players.find(p => p.id === playerId);
     if (!player) return;
 
+    // Check if current user has permission to edit this player
+    if (player.email !== auth.currentUser.email) {
+        alert('You can only edit your own player profile.');
+        return;
+    }
+
     // Populate the edit form
     document.getElementById('editPlayerId').value = player.id;
     document.getElementById('editPlayerFirstName').value = player.firstName;
@@ -133,6 +139,14 @@ async function editPlayer(playerId) {
 async function handleEditPlayerSubmit(e) {
     e.preventDefault();
     const playerId = document.getElementById('editPlayerId').value;
+    
+    // Verify current user has permission to edit this player
+    const player = players.find(p => p.id === playerId);
+    if (!player || player.email !== auth.currentUser.email) {
+        alert('You can only edit your own player profile.');
+        return;
+    }
+
     const playerData = {
         firstName: document.getElementById('editPlayerFirstName').value,
         lastName: document.getElementById('editPlayerLastName').value,
@@ -466,6 +480,8 @@ function renderPlayerCard(player) {
         '5.0': 'Expert Level'
     };
 
+    const isCurrentUser = auth.currentUser && player.email === auth.currentUser.email;
+
     return `
         <div class="card">
             <div class="list-item-content">
@@ -475,9 +491,11 @@ function renderPlayerCard(player) {
                     <p class="text-gray-600">${player.mobile}</p>
                     ${player.rating ? `<p class="text-gray-600 font-semibold">Self Rating: ${player.rating} (${ratingLabels[player.rating]})</p>` : ''}
                 </div>
-                <button onclick="editPlayer('${player.id}')" class="text-gray-500 hover:text-green-600">
-                    <span class="icon">✏️</span>
-                </button>
+                ${isCurrentUser ? `
+                    <button onclick="editPlayer('${player.id}')" class="text-gray-500 hover:text-green-600">
+                        <span class="icon">✏️</span>
+                    </button>
+                ` : ''}
             </div>
         </div>
     `;
