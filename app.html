@@ -319,6 +319,18 @@
         </div>
     </div>
 
+<div id="managePlayersModal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Manage Players</h2>
+            <button onclick="hideModal('managePlayersModal')" class="text-gray-500">&times;</button>
+        </div>
+        <div id="playerManagementList" class="space-y-2">
+            <!-- Will be populated dynamically -->
+        </div>
+    </div>
+</div>
+
     <!-- Firebase Scripts -->
     <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>

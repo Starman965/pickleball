@@ -14,6 +14,17 @@ let courts = [];
 let players = [];
 let playDates = [];
 
+// Add this near the top of script.js after your Firebase initialization
+const ADMIN_EMAILS = [
+    'demandgendave@gmail.com',  // David Lewis
+    'npalle@hotmail.com',       // Nagi Palle
+    'kenrubay@gmail.com'        // Kenneth Rubay
+];
+
+// Add a helper function to check if current user is admin
+function isAdmin() {
+    return ADMIN_EMAILS.includes(auth.currentUser?.email);
+}
 // Form Handler Functions
 async function handlePlayDateSubmit(e) {
     e.preventDefault();
@@ -398,53 +409,62 @@ function renderPlayDateCard(playDate) {
         })
         .join(', ');
     
-// Format time to include AM/PM and PT
-const timeFormat = new Date(`2000-01-01T${playDate.time}`).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'America/Los_Angeles'
-});
-const formattedTime = `${timeFormat} PT`;
+    // Format time to include AM/PM and PT
+    const timeFormat = new Date(`2000-01-01T${playDate.time}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'America/Los_Angeles'
+    });
+    const formattedTime = `${timeFormat} PT`;
 
-// Format date to include day of week with proper timezone handling
-const dateObj = new Date(`${playDate.date}T00:00:00-08:00`); // Force Pacific Time
-const dateFormat = dateObj.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'America/Los_Angeles'
-});
+    // Format date to include day of week with proper timezone handling
+    const dateObj = new Date(playDate.date);  // Changed this line
+    const dateFormat = dateObj.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'America/Los_Angeles'
+    });
 
     return `
         <div class="card">
             <div class="card-header">
-            <h3 class="card-title font-bold text-lg">${court.name || 'Unknown Court'}</h3>
+                <h3 class="card-title font-bold text-lg">${court.name || 'Unknown Court'}</h3>
                 <div class="flex gap-2 items-center">
                     <span class="card-badge">Court(s): ${playDate.courtNumbers}</span>
                 </div>
-                 <p class="text-gray-600">
+                <p class="text-gray-600">
                     <span class="icon">🎾</span>${court.address}, ${court.city}
                 </p>
             </div>
             <div class="space-y-2">
-             <div class="flex justify-between items-center">
-    <p class="text-gray-600">
-        <span class="icon">📆</span>${dateFormat} at ${formattedTime}
-    </p>
-</div>
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-600">
+                        <span class="icon">📆</span>${dateFormat} at ${formattedTime}
+                    </p>
+                </div>
                
                 <p class="text-gray-600 flex items-center gap-2">
                     <span class="icon">👤</span>Created by: ${creatorName}
-                    ${playDate.createdBy === auth.currentUser.email ? `
+                    ${playDate.createdBy === auth.currentUser.email || isAdmin() ? `
                         <button onclick="editPlayDate('${playDate.id}')" class="text-gray-500 hover:text-blue-600">
                             <span class="icon">✏️</span>
                         </button>
                     ` : ''}
                 </p>
                 <div class="mt-2">
-                    <p class="text-sm font-semibold">Players (${attendingPlayers.length}):</p>
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm font-semibold">Players (${attendingPlayers.length}):</p>
+                        ${isAdmin() ? `
+                            <button onclick="managePlayersModal('${playDate.id}')" 
+                                class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+                                <span class="icon">⚙️</span>
+                                <span>Manage</span>
+                            </button>
+                        ` : ''}
+                    </div>
                     <p class="text-sm text-gray-600 mt-1">${playerNames || 'No players yet'}</p>
                 </div>
                 <div class="mt-4">
@@ -458,6 +478,12 @@ const dateFormat = dateObj.toLocaleDateString('en-US', {
                              <span class="icon">✅</span>Join Play Date
                            </button>`
                     }
+                    ${isAdmin() && attendingPlayers.length === 0 ? `
+                        <button onclick="deletePlayDate('${playDate.id}')" 
+                            class="w-full mt-2 px-4 py-2 text-white bg-red-500 hover:bg-red-600 rounded-md transition-all duration-200 flex items-center justify-center gap-2">
+                            <span class="icon">🗑️</span>Delete Play Date
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         </div>
@@ -663,5 +689,62 @@ function showRatingInfo() {
     document.body.appendChild(modal);
 }
 
-// Make the function globally available
+
+// Add these functions to script.js
+async function managePlayersModal(playDateId) {
+    const playDate = playDates.find(p => p.id === playDateId);
+    if (!playDate) return;
+
+    const container = document.getElementById('playerManagementList');
+    container.innerHTML = players
+        .sort((a, b) => a.firstName.localeCompare(b.firstName))
+        .map(player => {
+            const isAttending = (playDate.players || []).includes(player.email);
+            return `
+                <div class="flex items-center justify-between p-2 ${isAttending ? 'bg-blue-50' : 'bg-gray-50'} rounded">
+                    <span>${player.firstName} ${player.lastName}</span>
+                    <button onclick="togglePlayerAttendance('${playDateId}', '${player.email}')"
+                        class="px-3 py-1 rounded ${isAttending ? 
+                            'bg-red-500 hover:bg-red-600 text-white' : 
+                            'bg-green-500 hover:bg-green-600 text-white'}">
+                        ${isAttending ? 'Remove' : 'Add'}
+                    </button>
+                </div>
+            `;
+        })
+        .join('');
+
+    showModal('managePlayersModal');
+}
+
+async function togglePlayerAttendance(playDateId, playerEmail) {
+    if (!isAdmin()) {
+        alert('Only admins can manage players');
+        return;
+    }
+
+    try {
+        const playDateRef = ref(db, `playDates/${playDateId}`);
+        const snapshot = await get(playDateRef);
+        const playDate = snapshot.val();
+        
+        let players = playDate.players || [];
+        if (players.includes(playerEmail)) {
+            players = players.filter(email => email !== playerEmail);
+        } else {
+            players.push(playerEmail);
+        }
+        
+        await set(ref(db, `playDates/${playDateId}/players`), players);
+        // Refresh the management modal
+        managePlayersModal(playDateId);
+    } catch (error) {
+        alert(`Failed to update player attendance: ${error.message}`);
+    }
+}
+
+// Add to your window exports
+window.managePlayersModal = managePlayersModal;
+window.togglePlayerAttendance = togglePlayerAttendance;
+window.isAdmin = isAdmin;
 window.showRatingInfo = showRatingInfo;
