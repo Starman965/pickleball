@@ -468,6 +468,11 @@ function renderPlayDateCard(playDate) {
                                 <span class="icon">⚙️</span>
                                 <span>Manage</span>
                             </button>
+                            <button onclick="generateRoundRobin('${playDate.id}')" 
+                                class="text-green-600 hover:text-green-800 text-sm flex items-center gap-1 ml-4">
+                                <span class="icon">🔄</span>
+                                <span>Round Robin</span>
+                            </button>
                         ` : ''}
                     </div>
                     <p class="text-sm text-gray-600 mt-1">${playerNames || 'No players yet'}</p>
@@ -753,3 +758,310 @@ window.managePlayersModal = managePlayersModal;
 window.togglePlayerAttendance = togglePlayerAttendance;
 window.isAdmin = isAdmin;
 window.showRatingInfo = showRatingInfo;
+
+// Add these functions to handle round robin scheduling
+function generateRoundRobin(playDateId) {
+    const playDate = playDates.find(p => p.id === playDateId);
+    if (!playDate || !playDate.players) return;
+
+    document.getElementById('roundRobinPlayDateId').value = playDateId;
+    showModal('roundRobinModal');
+}
+
+async function handleRoundRobinGenerate(e) {
+    e.preventDefault();
+    const playDateId = document.getElementById('roundRobinPlayDateId').value;
+    const numCourts = parseInt(document.getElementById('roundRobinCourts').value);
+    const courtNumbers = document.getElementById('roundRobinCourtNumbers').value
+        .split(',')
+        .map(n => n.trim())
+        .filter(n => n);
+    
+    if (courtNumbers.length !== numCourts) {
+        alert('Please specify exactly one court number for each court');
+        return;
+    }
+
+    const playDate = playDates.find(p => p.id === playDateId);
+    if (!playDate || !playDate.players) {
+        alert('No players found for this play date');
+        return;
+    }
+
+    const playersList = playDate.players.map(email => {
+        const player = players.find(p => p.email === email);
+        return {
+            email: email,
+            name: player ? `${player.firstName} ${player.lastName}` : email,
+            active: true // Add active status to track participation
+        };
+    });
+
+    const schedule = generateSchedule(playersList, numCourts, courtNumbers);
+    
+    try {
+        await set(ref(db, `playDates/${playDateId}/roundRobin`), {
+            schedule: schedule,
+            numCourts: numCourts,
+            courtNumbers: courtNumbers,
+            activePlayers: playersList,
+            generatedAt: new Date().toISOString()
+        });
+        
+        displayRoundRobinSchedule(schedule, courtNumbers);
+        hideModal('roundRobinModal');
+    } catch (error) {
+        alert(`Failed to save round robin schedule: ${error.message}`);
+    }
+}
+
+function generateSchedule(players, numCourts, courtNumbers) {
+    // Filter only active players
+    const activePlayers = players.filter(p => p.active);
+    const totalPlayers = activePlayers.length;
+    const playersPerCourt = 4;
+    const maxPlayersPlaying = numCourts * playersPerCourt;
+    
+    // Shuffle players array
+    const shuffledPlayers = [...activePlayers].sort(() => Math.random() - 0.5);
+    
+    let rounds = [];
+    let playerHistory = new Map(); // Track who has played with whom
+    
+    // Initialize player history
+    activePlayers.forEach(p1 => {
+        playerHistory.set(p1.email, new Set());
+    });
+
+    // Generate rounds
+    const numRounds = Math.ceil(totalPlayers / 2); // Ensure everyone plays with different partners
+    
+    for (let round = 0; round < numRounds; round++) {
+        let roundGames = [];
+        let availablePlayers = [...shuffledPlayers];
+        
+        for (let court = 0; court < numCourts && availablePlayers.length >= 4; court++) {
+            // Select 4 players who haven't played together
+            let courtPlayers = selectPlayersForCourt(availablePlayers, playerHistory);
+            
+            if (courtPlayers.length === 4) {
+                roundGames.push({
+                    court: court + 1,
+                    team1: [courtPlayers[0], courtPlayers[1]],
+                    team2: [courtPlayers[2], courtPlayers[3]]
+                });
+                
+                // Update player history
+                updatePlayerHistory(courtPlayers, playerHistory);
+                
+                // Remove selected players from available pool
+                availablePlayers = availablePlayers.filter(p => 
+                    !courtPlayers.find(cp => cp.email === p.email)
+                );
+            }
+        }
+        
+        // Add sitting out players
+        if (availablePlayers.length > 0) {
+            roundGames.push({
+                sittingOut: availablePlayers
+            });
+        }
+        
+        rounds.push({
+            roundNumber: round + 1,
+            games: roundGames
+        });
+        
+        // Rotate players for next round
+        rotateArray(shuffledPlayers);
+    }
+    
+    return rounds.map(round => ({
+        ...round,
+        games: round.games.map(game => {
+            if (game.court) {
+                return {
+                    ...game,
+                    courtNumber: courtNumbers[game.court - 1]
+                };
+            }
+            return game;
+        })
+    }));
+}
+
+function selectPlayersForCourt(availablePlayers, playerHistory) {
+    if (availablePlayers.length < 4) return [];
+    
+    let selectedPlayers = [];
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    while (selectedPlayers.length < 4 && attempts < maxAttempts) {
+        attempts++;
+        let candidate = availablePlayers[Math.floor(Math.random() * availablePlayers.length)];
+        
+        if (!selectedPlayers.includes(candidate) && 
+            canPlayWithOthers(candidate, selectedPlayers, playerHistory)) {
+            selectedPlayers.push(candidate);
+        }
+        
+        if (selectedPlayers.length === 4) break;
+        
+        if (attempts === maxAttempts - 1 && selectedPlayers.length < 4) {
+            selectedPlayers = availablePlayers.slice(0, 4); // Take first 4 if optimal solution not found
+            break;
+        }
+    }
+    
+    return selectedPlayers;
+}
+
+function canPlayWithOthers(player, selectedPlayers, playerHistory) {
+    const playerPartners = playerHistory.get(player.email);
+    return !selectedPlayers.some(p => playerPartners.has(p.email));
+}
+
+function updatePlayerHistory(courtPlayers, playerHistory) {
+    // Update for team 1
+    playerHistory.get(courtPlayers[0].email).add(courtPlayers[1].email);
+    playerHistory.get(courtPlayers[1].email).add(courtPlayers[0].email);
+    
+    // Update for team 2
+    playerHistory.get(courtPlayers[2].email).add(courtPlayers[3].email);
+    playerHistory.get(courtPlayers[3].email).add(courtPlayers[2].email);
+}
+
+function rotateArray(arr) {
+    arr.push(arr.shift());
+}
+
+function displayRoundRobinSchedule(schedule, courtNumbers) {
+    const container = document.getElementById('roundRobinDisplay');
+    let html = `
+        <div class="space-y-6 p-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold">Round Robin Schedule</h3>
+                <button onclick="showUpdatePlayers()" 
+                    class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+                    <span class="icon">👥</span>
+                    Update Players
+                </button>
+            </div>
+    `;
+    
+    schedule.forEach(round => {
+        html += `
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h4 class="font-bold mb-2">Round ${round.roundNumber}</h4>
+                <div class="space-y-2">
+        `;
+        
+        round.games.forEach(game => {
+            if (game.sittingOut) {
+                html += `
+                    <div class="text-gray-600">
+                        <span class="font-semibold">Sitting Out:</span> 
+                        ${game.sittingOut.map(p => p.name).join(', ')}
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="bg-gray-50 p-2 rounded">
+                        <div class="font-semibold">Court ${game.courtNumber}</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="text-blue-600">
+                                Team 1: ${game.team1.map(p => p.name).join(' & ')}
+                            </div>
+                            <div class="text-green-600">
+                                Team 2: ${game.team2.map(p => p.name).join(' & ')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+    container.innerHTML = html;
+    showModal('roundRobinDisplayModal');
+}
+
+async function showUpdatePlayers() {
+    const playDateId = document.getElementById('roundRobinPlayDateId').value;
+    const playDate = playDates.find(p => p.id === playDateId);
+    if (!playDate?.roundRobin?.activePlayers) return;
+
+    // Close the round robin display modal first
+    hideModal('roundRobinDisplayModal');
+
+    const container = document.getElementById('activePlayersList');
+    container.innerHTML = playDate.roundRobin.activePlayers
+        .map(player => `
+            <div class="flex items-center justify-between p-2 ${player.active ? 'bg-blue-50' : 'bg-gray-50'} rounded">
+                <span>${player.name}</span>
+                <label class="inline-flex items-center">
+                    <input type="checkbox" 
+                           ${player.active ? 'checked' : ''}
+                           onchange="togglePlayerActive('${playDateId}', '${player.email}')"
+                           class="form-checkbox h-5 w-5 text-blue-600">
+                    <span class="ml-2">Active</span>
+                </label>
+            </div>
+        `)
+        .join('');
+
+    showModal('updateRoundRobinModal');
+}
+async function togglePlayerActive(playDateId, playerEmail) {
+    const playDateRef = ref(db, `playDates/${playDateId}/roundRobin/activePlayers`);
+    const snapshot = await get(playDateRef);
+    const activePlayers = snapshot.val() || [];
+    
+    const updatedPlayers = activePlayers.map(player => {
+        if (player.email === playerEmail) {
+            return { ...player, active: !player.active };
+        }
+        return player;
+    });
+
+    await set(playDateRef, updatedPlayers);
+}
+
+async function regenerateSchedule() {
+    const playDateId = document.getElementById('roundRobinPlayDateId').value;
+    const playDate = playDates.find(p => p.id === playDateId);
+    if (!playDate?.roundRobin) return;
+
+    const { numCourts, courtNumbers, activePlayers } = playDate.roundRobin;
+    const schedule = generateSchedule(activePlayers, numCourts, courtNumbers);
+
+    try {
+        await set(ref(db, `playDates/${playDateId}/roundRobin/schedule`), schedule);
+        displayRoundRobinSchedule(schedule, courtNumbers);
+        hideModal('updateRoundRobinModal');
+    } catch (error) {
+        alert(`Failed to regenerate schedule: ${error.message}`);
+    }
+}
+// Add this helper function
+function updateCourtNumbersPlaceholder() {
+    const numCourts = document.getElementById('roundRobinCourts').value;
+    const placeholder = Array.from({length: numCourts}, (_, i) => i + 1).join(', ');
+    document.getElementById('roundRobinCourtNumbers').placeholder = `Example: ${placeholder}`;
+}
+
+
+window.generateRoundRobin = generateRoundRobin;
+window.handleRoundRobinGenerate = handleRoundRobinGenerate;
+window.showUpdatePlayers = showUpdatePlayers;
+window.togglePlayerActive = togglePlayerActive;
+window.regenerateSchedule = regenerateSchedule;
+window.updateCourtNumbersPlaceholder = updateCourtNumbersPlaceholder;

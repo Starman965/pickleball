@@ -330,6 +330,73 @@
         </div>
     </div>
 </div>
+
+<!-- Replace the existing roundRobinModal content -->
+<div id="roundRobinModal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Generate Round Robin Schedule</h2>
+            <button onclick="hideModal('roundRobinModal')" class="text-gray-500">&times;</button>
+        </div>
+        <form id="roundRobinForm" onsubmit="handleRoundRobinGenerate(event)">
+            <input type="hidden" id="roundRobinPlayDateId">
+            <div class="space-y-4">
+                <div>
+                    <label class="block mb-1">Number of Courts</label>
+                    <select id="roundRobinCourts" class="w-full p-2 border rounded" 
+                            onchange="updateCourtNumbersPlaceholder()">
+                        <option value="1">1 Court</option>
+                        <option value="2">2 Courts</option>
+                        <option value="3">3 Courts</option>
+                        <option value="4">4 Courts</option>
+                        <option value="5">5 Courts</option>
+                        <option value="6">6 Courts</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-1">Court Numbers (comma-separated)</label>
+                    <input type="text" id="roundRobinCourtNumbers" 
+                           class="w-full p-2 border rounded"
+                           placeholder="Enter court number(s)">
+                </div>
+                <button type="submit" 
+                class="w-full px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                <span class="icon">🔄</span>Generate Schedule
+            </button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Add new modal for managing active players -->
+<div id="updateRoundRobinModal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Update Active Players</h2>
+            <button onclick="hideModal('updateRoundRobinModal')" class="text-gray-500">&times;</button>
+        </div>
+        <div id="activePlayersList" class="space-y-2 mb-4">
+            <!-- Will be populated dynamically -->
+        </div>
+        <div class="flex gap-2">
+            <button onclick="regenerateSchedule()" 
+            class="w-full px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
+            <span class="icon">🔄</span>Regenerate Schedule
+        </button>
+        </div>
+    </div>
+</div>
+
+<div id="roundRobinDisplayModal" class="modal">
+    <div class="modal-content max-w-3xl">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Round Robin Schedule</h2>
+            <button onclick="hideModal('roundRobinDisplayModal')" class="text-gray-500">&times;</button>
+        </div>
+        <div id="roundRobinDisplay" class="space-y-4">
+            <!-- Schedule will be inserted here -->
+        </div>
+    </div>
+</div>
     <!-- Firebase Scripts -->
     <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
