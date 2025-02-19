@@ -398,13 +398,24 @@ function renderPlayDateCard(playDate) {
         })
         .join(', ');
     
-    // Format time to include AM/PM and PT
-    const timeFormat = new Date(`2000-01-01T${playDate.time}`).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-    });
-    const formattedTime = `${timeFormat} PT`;
+// Format time to include AM/PM and PT
+const timeFormat = new Date(`2000-01-01T${playDate.time}`).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Los_Angeles'
+});
+const formattedTime = `${timeFormat} PT`;
+
+// Format date to include day of week with proper timezone handling
+const dateObj = new Date(`${playDate.date}T00:00:00-08:00`); // Force Pacific Time
+const dateFormat = dateObj.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'America/Los_Angeles'
+});
 
     return `
         <div class="card">
@@ -418,11 +429,11 @@ function renderPlayDateCard(playDate) {
                 </p>
             </div>
             <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-600">
-                        <span class="icon">📆</span>${new Date(playDate.date).toLocaleDateString()} at ${formattedTime}
-                    </p>
-                </div>
+             <div class="flex justify-between items-center">
+    <p class="text-gray-600">
+        <span class="icon">📆</span>${dateFormat} at ${formattedTime}
+    </p>
+</div>
                
                 <p class="text-gray-600 flex items-center gap-2">
                     <span class="icon">👤</span>Created by: ${creatorName}
