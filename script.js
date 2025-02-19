@@ -147,6 +147,25 @@ async function editPlayer(playerId) {
     showModal('editPlayerModal');
 }
 
+async function viewCurrentSchedule() {
+    const playDateId = document.getElementById('roundRobinPlayDateId').value;
+    const playDate = playDates.find(p => p.id === playDateId);
+    
+    if (!playDate?.roundRobin?.schedule) {
+        alert('No round robin schedule exists yet. Generate a new schedule first.');
+        return;
+    }
+    
+    // Display the existing schedule
+    displayRoundRobinSchedule(
+        playDate.roundRobin.schedule,
+        playDate.roundRobin.courtNumbers
+    );
+    
+    // Hide the generation modal
+    hideModal('roundRobinModal');
+}
+
 async function handleEditPlayerSubmit(e) {
     e.preventDefault();
     const playerId = document.getElementById('editPlayerId').value;
@@ -1070,3 +1089,4 @@ window.showUpdatePlayers = showUpdatePlayers;
 window.togglePlayerActive = togglePlayerActive;
 window.regenerateSchedule = regenerateSchedule;
 window.updateCourtNumbersPlaceholder = updateCourtNumbersPlaceholder;
+window.viewCurrentSchedule = viewCurrentSchedule;

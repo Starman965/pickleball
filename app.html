@@ -331,7 +331,7 @@
     </div>
 </div>
 
-<!-- Replace the existing roundRobinModal content -->
+<!-- Replace the existing roundRobinModal form buttons section -->
 <div id="roundRobinModal" class="modal">
     <div class="modal-content">
         <div class="flex justify-between items-center mb-4">
@@ -359,14 +359,22 @@
                            class="w-full p-2 border rounded"
                            placeholder="Enter court number(s)">
                 </div>
-                <button type="submit" 
-                class="w-full px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
-                <span class="icon">🔄</span>Generate Schedule
-            </button>
+                <div class="flex gap-2">
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                        <span class="icon">🔄</span>Generate New Schedule
+                    </button>
+                    <button type="button"
+                            onclick="viewCurrentSchedule()"
+                            class="flex-1 px-4 py-2 text-white bg-green-500 hover:bg-green-600 rounded-md transition duration-200 ease-in-out flex items-center justify-center gap-2">
+                        <span class="icon">👁️</span>View Current Schedule
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 </div>
+
 <!-- Add new modal for managing active players -->
 <div id="updateRoundRobinModal" class="modal">
     <div class="modal-content">
