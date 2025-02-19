@@ -159,6 +159,7 @@ async function handleEditPlayerSubmit(e) {
     }
 
     const playerData = {
+        ...player, // Keep existing data
         firstName: document.getElementById('editPlayerFirstName').value,
         lastName: document.getElementById('editPlayerLastName').value,
         email: document.getElementById('editPlayerEmail').value,
@@ -171,6 +172,10 @@ async function handleEditPlayerSubmit(e) {
         await set(ref(db, `players/${playerId}`), playerData);
         hideModal('editPlayerModal');
         e.target.reset();
+        // Force refresh both players list and dashboard
+        updatePlayers();
+        updateDashboard();
+        updateCurrentUserDisplay(); // Update the header if current user's name changed
     } catch (error) {
         alert(`Failed to update player: ${error.message}`);
     }
