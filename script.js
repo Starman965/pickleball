@@ -349,12 +349,17 @@ function updatePlayDates() {
 
 function updatePlayers() {
     const container = document.getElementById('playersList');
+    const playerCount = document.getElementById('playerCount');
+    
+    // Update player count
+    playerCount.textContent = players.length;
+
+    // Existing code for rendering players
     container.innerHTML = players
         .sort((a, b) => a.firstName.localeCompare(b.firstName))
         .map(renderPlayerCard)
         .join('');
 }
-
 function updateCourts() {
     const container = document.getElementById('courtsList');
     container.innerHTML = courts
