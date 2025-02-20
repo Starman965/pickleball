@@ -448,7 +448,7 @@ function renderPlayDateCard(playDate) {
     const formattedTime = `${timeFormat} PT`;
 
     // Format date to include day of week with proper timezone handling
-    const dateObj = new Date(playDate.date);
+    const dateObj = new Date(playDate.date + 'T00:00:00');  // Add time component to prevent timezone issues
     const dateFormat = dateObj.toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'short',
@@ -456,7 +456,7 @@ function renderPlayDateCard(playDate) {
         year: 'numeric',
         timeZone: 'America/Los_Angeles'
     });
-
+    
     // Calculate end time (2 hours after start time)
     const endTime = getEndTime(playDate.time);
 
