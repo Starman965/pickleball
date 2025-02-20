@@ -448,7 +448,7 @@ function renderPlayDateCard(playDate) {
     const formattedTime = `${timeFormat} PT`;
 
     // Format date to include day of week with proper timezone handling
-    const dateObj = new Date(playDate.date);  // Changed this line
+    const dateObj = new Date(playDate.date);
     const dateFormat = dateObj.toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'short',
@@ -456,6 +456,13 @@ function renderPlayDateCard(playDate) {
         year: 'numeric',
         timeZone: 'America/Los_Angeles'
     });
+
+    // Calculate end time (2 hours after start time)
+    const endTime = getEndTime(playDate.time);
+
+    // Create description for calendar event
+    const description = `Pickleball play date at ${court.name}\nCourts: ${playDate.courtNumbers}\nPlayers: ${playerNames}`;
+    const location = `${court.address}, ${court.city}, ${court.state}`;
 
     return `
         <div class="card">
@@ -473,6 +480,19 @@ function renderPlayDateCard(playDate) {
                     <p class="text-gray-600">
                         <span class="icon">📆</span>${dateFormat} at ${formattedTime}
                     </p>
+                    <add-to-calendar-button
+                        name="Pickleball at ${court.name}"
+                        description="${description}"
+                        location="${location}"
+                        startDate="${playDate.date}"
+                        startTime="${playDate.time}"
+                        endTime="${endTime}"
+                        timeZone="America/Los_Angeles"
+                        options="['Google', 'Apple', 'Microsoft365', 'Outlook.com']"
+                        buttonStyle="default"
+                        size="2"
+                        label="📅"
+                    ></add-to-calendar-button>
                 </div>
                
                 <p class="text-gray-600 flex items-center gap-2">
@@ -1081,7 +1101,12 @@ function updateCourtNumbersPlaceholder() {
     const placeholder = Array.from({length: numCourts}, (_, i) => i + 1).join(', ');
     document.getElementById('roundRobinCourtNumbers').placeholder = `Example: ${placeholder}`;
 }
-
+function getEndTime(startTime) {
+    const [hours, minutes] = startTime.split(':');
+    let endHours = parseInt(hours) + 2;
+    if (endHours > 23) endHours = 23;
+    return `${endHours.toString().padStart(2, '0')}:${minutes}`;
+}
 
 window.generateRoundRobin = generateRoundRobin;
 window.handleRoundRobinGenerate = handleRoundRobinGenerate;
