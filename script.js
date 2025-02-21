@@ -18,7 +18,8 @@ let playDates = [];
 const ADMIN_EMAILS = [
     'demandgendave@gmail.com',  // David Lewis
     'npalle@hotmail.com',       // Nagi Palle
-    'kenrubay@gmail.com'        // Kenneth Rubay
+    'kenrubay@gmail.com',        // Kenneth Rubay
+    'crowebob81@gmail.com'        // Bob Crowe
 ];
 
 // Add a helper function to check if current user is admin
@@ -604,13 +605,17 @@ function renderPlayerCard(player) {
 
     const isCurrentUser = auth.currentUser && player.email === auth.currentUser.email;
     const ratingClass = player.rating ? 'bg-blue-50' : 'bg-gray-50';
+    const isAdminUser = ADMIN_EMAILS.includes(player.email);
 
     return `
         <div class="card transform transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${ratingClass}">
             <div class="list-item-content">
                 <div class="space-y-2">
                     <div class="flex justify-between items-start">
-                        <h3 class="font-bold text-lg text-gray-900">${player.firstName} ${player.lastName}</h3>
+                        <h3 class="font-bold text-lg text-gray-900">
+                            ${player.firstName} ${player.lastName}
+                            ${isAdminUser ? `<span class="text-sm font-normal text-blue-600 ml-2">(Admin)</span>` : ''}
+                        </h3>
                         ${isCurrentUser ? `
                             <button onclick="editPlayer('${player.id}')" 
                                 class="text-gray-500 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50">
@@ -698,66 +703,59 @@ function toggleForms() {
     signupForm.classList.toggle('hidden');
 }
 
-// Make functions globally available
-window.showSection = showSection;
-window.showModal = showModal;
-window.hideModal = hideModal;
-window.toggleForms = toggleForms;
-window.joinPlayDate = joinPlayDate;
-window.leavePlayDate = leavePlayDate;
-window.logout = logout;
-window.editCourt = editCourt;
-window.editPlayer = editPlayer;
-window.editPlayDate = editPlayDate;
-window.deletePlayDate = deletePlayDate;
 
 // Add this function to show the rating info modal
 function showRatingInfo() {
-    const ratingInfo = `
-        <div class="space-y-4">
-            <div>
-                <h3 class="font-bold">2.0 (Beginner)</h3>
-                <p>Just learning the game. Can hit basic shots but struggles with consistency. Lacks control and strategy.</p>
-            </div>
-            <div>
-                <h3 class="font-bold">3.0 (Intermediate)</h3>
-                <p>Can sustain short rallies with medium pace. Beginning to understand basic strategies like dinking and positioning. Struggles with shot consistency and unforced errors.</p>
-            </div>
-            <div>
-                <h3 class="font-bold">3.5 (Advanced Intermediate)</h3>
-                <p>More consistent with basic shots (forehand, backhand, serve, and volley). Understands court positioning and basic strategy. Beginning to add spin and placement. Can anticipate opponents' shots but lacks high-level execution.</p>
-            </div>
-            <div>
-                <h3 class="font-bold">4.0 (Advanced)</h3>
-                <p>Controls pace and placement of shots. Has reliable third-shot drops, dinks, and volleys. Strategically moves and adapts during games. Executes offensive and defensive shots with confidence.</p>
-            </div>
-            <div>
-                <h3 class="font-bold">4.5 (Highly Skilled)</h3>
-                <p>Strong shot variety and control. Can create offensive opportunities with well-placed dinks and drives. Consistently wins against lower-rated players. Excellent anticipation and reaction speed.</p>
-            </div>
-            <div>
-                <h3 class="font-bold">5.0+ (Expert)</h3>
-                <p>Plays at an elite level with high consistency, power, and precision. Competes in high-level tournaments. Has mastered all aspects of the game, including spin, strategy, and fast-paced exchanges.</p>
-            </div>
-        </div>
-    `;
-
-    // Create and show a modal with the rating information
     const modal = document.createElement('div');
-    modal.className = 'modal';
+    modal.className = 'modal fixed inset-0 flex items-center justify-center z-50';
     modal.style.display = 'block';
     modal.innerHTML = `
-        <div class="modal-content max-h-[80vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
+        <div class="modal-content max-w-2xl w-full mx-4 bg-white rounded-lg shadow-xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center p-4 border-b bg-white sticky top-0">
                 <h2 class="text-xl font-bold">Pickleball Skill Ratings</h2>
-                <button onclick="this.closest('.modal').remove()" class="text-gray-500">&times;</button>
+                <button onclick="this.closest('.modal').remove()" class="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
             </div>
-            ${ratingInfo}
+            <div class="overflow-y-auto flex-1 p-4">
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-bold">2.0 (Beginner)</h3>
+                        <p class="mt-1">Just learning the game. Can hit basic shots but struggles with consistency. Lacks control and strategy.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">3.0 (Intermediate)</h3>
+                        <p class="mt-1">Can sustain short rallies with medium pace. Beginning to understand basic strategies like dinking and positioning. Struggles with shot consistency and unforced errors.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">3.5 (Advanced Intermediate)</h3>
+                        <p class="mt-1">More consistent with basic shots (forehand, backhand, serve, and volley). Understands court positioning and basic strategy. Beginning to add spin and placement. Can anticipate opponents' shots but lacks high-level execution.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">4.0 (Advanced)</h3>
+                        <p class="mt-1">Controls pace and placement of shots. Has reliable third-shot drops, dinks, and volleys. Strategically moves and adapts during games. Executes offensive and defensive shots with confidence.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">4.5 (Highly Skilled)</h3>
+                        <p class="mt-1">Strong shot variety and control. Can create offensive opportunities with well-placed dinks and drives. Consistently wins against lower-rated players. Excellent anticipation and reaction speed.</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold">5.0+ (Expert)</h3>
+                        <p class="mt-1">Plays at an elite level with high consistency, power, and precision. Competes in high-level tournaments. Has mastered all aspects of the game, including spin, strategy, and fast-paced exchanges.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
-    document.body.appendChild(modal);
-}
 
+    // Add backdrop and prevent body scroll
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    document.body.style.overflow = 'hidden';
+    document.body.appendChild(modal);
+
+    // Restore body scroll when modal is closed
+    modal.querySelector('button').addEventListener('click', () => {
+        document.body.style.overflow = '';
+    });
+}
 
 // Add these functions to script.js
 async function managePlayersModal(playDateId) {
@@ -1000,12 +998,11 @@ function displayRoundRobinSchedule(schedule, courtNumbers) {
     const container = document.getElementById('roundRobinDisplay');
     let html = `
         <div class="space-y-6 p-4">
-            <div class="flex justify-between items-center">
-                <h3 class="text-xl font-bold">Round Robin Schedule</h3>
+            <div class="flex justify-between items-center">   
                 <button onclick="showUpdatePlayers()" 
                     class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
                     <span class="icon">👥</span>
-                    Update Players
+                    Modify Players
                 </button>
             </div>
     `;
@@ -1130,3 +1127,14 @@ window.togglePlayerActive = togglePlayerActive;
 window.regenerateSchedule = regenerateSchedule;
 window.updateCourtNumbersPlaceholder = updateCourtNumbersPlaceholder;
 window.viewCurrentSchedule = viewCurrentSchedule;
+window.showSection = showSection;
+window.showModal = showModal;
+window.hideModal = hideModal;
+window.toggleForms = toggleForms;
+window.joinPlayDate = joinPlayDate;
+window.leavePlayDate = leavePlayDate;
+window.logout = logout;
+window.editCourt = editCourt;
+window.editPlayer = editPlayer;
+window.editPlayDate = editPlayDate;
+window.deletePlayDate = deletePlayDate;
