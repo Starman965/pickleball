@@ -343,9 +343,20 @@ function updateDashboard() {
     const upcomingContainer = document.getElementById('upcomingPlayDates');
     const recentContainer = document.getElementById('recentPlayers');
 
+    // Get current date in Pacific Time
+    const today = new Date();
+    const pacificDate = new Date(today.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+    pacificDate.setHours(0, 0, 0, 0);
+
     // Update upcoming play dates
     const upcomingDates = playDates
-        .filter(date => new Date(date.date) >= new Date())
+        .filter(date => {
+            const playDate = new Date(date.date + 'T00:00:00');
+            // Convert play date to Pacific Time
+            const pacificPlayDate = new Date(playDate.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+            pacificPlayDate.setHours(0, 0, 0, 0);
+            return pacificPlayDate >= pacificDate;
+        })
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .slice(0, 5);
 
@@ -353,7 +364,7 @@ function updateDashboard() {
         ? upcomingDates.map(renderPlayDateCard).join('')
         : '<p class="text-gray-500">No upcoming play dates scheduled.</p>';
 
-    // Update recent players
+    // Rest of the function remains the same
     const recentPlayersList = players
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5);
