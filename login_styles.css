@@ -173,3 +173,17 @@ button:active {
 .form-group {
     margin-bottom: 1rem;
 }
+.success-message {
+    color: #28a745;
+    font-size: 0.875rem;
+    margin: 8px 0;
+    padding: 8px;
+    background-color: #d4edda;
+    border-radius: 4px;
+    text-align: center;
+    display: none;  /* Hidden by default */
+}
+
+.success-message.visible {
+    display: block;
+}

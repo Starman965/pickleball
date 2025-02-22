@@ -11,9 +11,9 @@
 <meta name="keywords" content="Pickleball, blackhawk sports complex, blackhawk country club">
 <meta name="author" content="David Lewis">
 <!-- Open Graph Title -->
-<meta property="og:title" content="Blackhawk Pickle - For Getting Players Together Easily" />
+<meta property="og:title" content="Blackhawk Pickle - For Game Scheduling and Managing" />
 <!-- Open Graph Description -->
-<meta property="og:description" content="Blackhawk Pickle App is for planning and managing our local Pickleball group" />
+<meta property="og:description" content="Blackhawk Pickle is for planning and managing our community Pickleball games" />
 <!-- Open Graph URL -->
 <meta property="og:url" content="https://www.blackhawkpickle.com" />
 
@@ -35,7 +35,9 @@
             <div id="loginView">
                 <h2>Blackhawk Pickle App</h2>
                 <input type="email" id="emailInput" placeholder="Email" required>
+                <div class="error-message" id="loginEmailError"></div>
                 <input type="password" id="passwordInput" placeholder="Password" required>
+                <div class="error-message" id="loginPasswordError"></div>
                 <button id="loginButton" class="submit-btn">Login</button>
                 <p class="text-center">
                     <button id="forgotPasswordBtn" class="link-button">Forgot Password?</button>
@@ -76,16 +78,18 @@
                 </p>
             </div>
             
-            <!-- Password Reset View -->
-            <div id="resetPasswordView" style="display: none;">
-                <h2>Reset Password</h2>
-                <p>Enter your email address and we'll send you a password reset link.</p>
-                <input type="email" id="resetEmailInput" placeholder="Email" required>
-                <button id="resetPasswordSubmitBtn" class="submit-btn">Send Reset Link</button>
-                <p>
-                    <button id="backToLoginBtn" class="link-button">Back to Login</button>
-                </p>
-            </div>
+                             <!-- Password Reset View -->
+                    <div id="resetPasswordView" style="display: none;">
+                        <h2>Reset Password</h2>
+                        <p>Enter your email address and we'll send you a password reset link.</p>
+                        <div id="resetSuccessMessage" class="success-message"></div>
+                        <input type="email" id="resetEmailInput" placeholder="Email" required>
+                        <div class="error-message" id="resetEmailError"></div>
+                        <button id="resetPasswordSubmitBtn" class="submit-btn">Send Reset Link</button>
+                        <p>
+                            <button id="backToLoginBtn" class="link-button">Back to Login</button>
+                        </p>
+                    </div>
         </div>
     </div>
 
@@ -201,25 +205,25 @@
         // Phone input formatting
         document.getElementById('phoneInput').addEventListener('input', (e) => formatPhoneNumber(e.target));
 
-        // Signup form submission
+               // Replace the existing signup form submission handler
         document.getElementById('signupForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!validateForm()) return;
-
+        
             const signupButton = document.getElementById('signupButton');
             signupButton.disabled = true;
-
+        
             try {
                 const email = document.getElementById('signupEmailInput').value;
                 const password = document.getElementById('signupPasswordInput').value;
                 const firstName = document.getElementById('firstNameInput').value;
                 const lastName = document.getElementById('lastNameInput').value;
                 const phone = document.getElementById('phoneInput').value;
-
+        
                 // Create the authentication user first
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 console.log('Auth account created successfully');
-
+        
                 // Create the player data
                 const playerData = {
                     firstName: firstName,
@@ -229,7 +233,7 @@
                     createdAt: new Date().toISOString(),
                     uid: userCredential.user.uid
                 };
-
+        
                 // Save player data with a promise
                 const saveData = async () => {
                     const playersRef = ref(db, 'players');
@@ -243,7 +247,7 @@
                     }
                     return true;
                 };
-
+        
                 // Wait for data to be saved before redirecting
                 await saveData();
                 console.log('Player data saved and verified successfully');
@@ -251,10 +255,24 @@
                 // Use a slight delay before redirect to ensure database operation completes
                 await new Promise(resolve => setTimeout(resolve, 500));
                 window.location.href = 'app.html';
-
+        
             } catch (error) {
                 console.error('Error during signup:', error);
-                alert('Signup error: ' + error.message);
+                
+                // Handle specific error cases with inline messages
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        document.getElementById('emailError').textContent = 'This email is already registered';
+                        break;
+                    case 'auth/invalid-email':
+                        document.getElementById('emailError').textContent = 'Invalid email address';
+                        break;
+                    case 'auth/weak-password':
+                        document.getElementById('passwordError').textContent = 'Password is too weak';
+                        break;
+                    default:
+                        document.getElementById('emailError').textContent = 'Signup failed. Please try again';
+                }
                 
                 if (auth.currentUser) {
                     try {
@@ -290,30 +308,98 @@
         });
 
         // Login handler
+             // Replace the existing login handler with this code
         document.getElementById('loginButton').addEventListener('click', async () => {
+            // Clear previous error messages
+            document.getElementById('loginEmailError').textContent = '';
+            document.getElementById('loginPasswordError').textContent = '';
+            
             const email = document.getElementById('emailInput').value;
             const password = document.getElementById('passwordInput').value;
+            
+            // Basic validation
+            if (!email) {
+                document.getElementById('loginEmailError').textContent = 'Email is required';
+                return;
+            }
+            if (!password) {
+                document.getElementById('loginPasswordError').textContent = 'Password is required';
+                return;
+            }
             
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 window.location.href = 'app.html';
             } catch (error) {
                 console.error("Login error:", error.message);
-                alert("Login failed: " + error.message);
+                
+                // Handle specific error cases
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        document.getElementById('loginEmailError').textContent = 'Invalid email address';
+                        break;
+                    case 'auth/user-not-found':
+                        document.getElementById('loginEmailError').textContent = 'No account found with this email';
+                        break;
+                    case 'auth/wrong-password':
+                        document.getElementById('loginPasswordError').textContent = 'Incorrect password';
+                        break;
+                    case 'auth/too-many-requests':
+                        document.getElementById('loginPasswordError').textContent = 'Too many attempts. Please try again later';
+                        break;
+                    default:
+                        document.getElementById('loginPasswordError').textContent = 'Login failed. Check email/password and try again';
+                }
             }
         });
 
-        // Password reset handler
+                // Update the password reset handler
         document.getElementById('resetPasswordSubmitBtn').addEventListener('click', async () => {
             const email = document.getElementById('resetEmailInput').value;
+            const successMessage = document.getElementById('resetSuccessMessage');
+            const errorMessage = document.getElementById('resetEmailError');
+            
+            // Clear previous messages
+            successMessage.classList.remove('visible');
+            errorMessage.textContent = '';
+            
+            // Validate email
+            if (!email) {
+                errorMessage.textContent = 'Email is required';
+                return;
+            }
+            
+            if (!validateEmail(email)) {
+                errorMessage.textContent = 'Please enter a valid email address';
+                return;
+            }
+            
             try {
                 await sendPasswordResetEmail(auth, email);
-                alert('Password reset email sent! Check your inbox.');
-                document.getElementById('loginView').style.display = 'block';
-                document.getElementById('resetPasswordView').style.display = 'none';
+                successMessage.textContent = 'Password reset email sent! Check your inbox.';
+                successMessage.classList.add('visible');  // Use classList instead of style.display
+                
+                // Return to login after 3 seconds
+                setTimeout(() => {
+                    successMessage.classList.remove('visible');
+                    showView('loginView');
+                }, 3000);
             } catch (error) {
                 console.error("Error sending reset email:", error);
-                alert(error.message || "Error sending reset email");
+                // Handle specific Firebase error codes
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage.textContent = 'No account found with this email';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage.textContent = 'Invalid email address';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage.textContent = 'Too many attempts. Please try again later';
+                        break;
+                    default:
+                        errorMessage.textContent = 'Failed to send reset email. Please try again';
+                }
             }
         });
 
