@@ -710,12 +710,12 @@ function showRatingInfo() {
     modal.className = 'modal fixed inset-0 flex items-center justify-center z-50';
     modal.style.display = 'block';
     modal.innerHTML = `
-        <div class="modal-content max-w-2xl w-full mx-4 bg-white rounded-lg shadow-xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center p-4 border-b bg-white sticky top-0">
+        <div class="modal-content max-w-2xl w-full mx-4 bg-white rounded-lg shadow-xl">
+            <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Pickleball Skill Ratings</h2>
                 <button onclick="this.closest('.modal').remove()" class="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
             </div>
-            <div class="overflow-y-auto flex-1 p-4">
+            <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
                 <div class="space-y-4">
                     <div>
                         <h3 class="font-bold">2.0 (Beginner)</h3>
@@ -1002,7 +1002,7 @@ function displayRoundRobinSchedule(schedule, courtNumbers) {
                 <button onclick="showUpdatePlayers()" 
                     class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
                     <span class="icon">👥</span>
-                    Modify Players
+                    Change Active Players
                 </button>
             </div>
     `;
@@ -1059,23 +1059,30 @@ async function showUpdatePlayers() {
     hideModal('roundRobinDisplayModal');
 
     const container = document.getElementById('activePlayersList');
-    container.innerHTML = playDate.roundRobin.activePlayers
-        .map(player => `
-            <div class="flex items-center justify-between p-2 ${player.active ? 'bg-blue-50' : 'bg-gray-50'} rounded">
-                <span>${player.name}</span>
-                <label class="inline-flex items-center">
-                    <input type="checkbox" 
-                           ${player.active ? 'checked' : ''}
-                           onchange="togglePlayerActive('${playDateId}', '${player.email}')"
-                           class="form-checkbox h-5 w-5 text-blue-600">
-                    <span class="ml-2">Active</span>
-                </label>
-            </div>
-        `)
-        .join('');
+    
+    container.innerHTML = playDate.roundRobin.activePlayers.map(player => `
+        <div class="flex items-center justify-between p-2 ${player.active ? 'bg-blue-50' : 'bg-gray-50'} rounded">
+            <span>${player.name}</span>
+            <label class="inline-flex items-center">
+                <input type="checkbox" 
+                       ${player.active ? 'checked' : ''}
+                       onchange="togglePlayerActive('${playDateId}', '${player.email}')"
+                       class="form-checkbox h-5 w-5 text-blue-600">
+                <span class="ml-2">Active</span>
+            </label>
+        </div>
+    `).join('');
 
     showModal('updateRoundRobinModal');
 }
+// Add this new function to handle regeneration and display
+async function regenerateAndShowSchedule() {
+    await regenerateSchedule();
+    viewCurrentSchedule();
+}
+
+// Add to window exports
+window.regenerateAndShowSchedule = regenerateAndShowSchedule;
 async function togglePlayerActive(playDateId, playerEmail) {
     const playDateRef = ref(db, `playDates/${playDateId}/roundRobin/activePlayers`);
     const snapshot = await get(playDateRef);

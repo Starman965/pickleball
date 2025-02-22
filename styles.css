@@ -237,13 +237,13 @@ input, select {
 #roundRobinDisplay::-webkit-scrollbar-thumb:hover {
     background-color: #A0AEC0;
 }
-/* Add specific z-index for round robin modals */
-#updateRoundRobinModal {
-    z-index: 1020; /* Higher than manage players */
-}
 
 #roundRobinDisplayModal {
-    z-index: 1030; /* Highest z-index */
+    z-index: 1010; /* Highest z-index */
+}
+
+#updateRoundRobinModal {
+    z-index: 1020; /* Higher than manage players */
 }
 
 /* For the round robin display modal, keep the wider max-width */
@@ -253,7 +253,7 @@ input, select {
 
 /* Specific modal z-indices */
 #managePlayersModal {
-    z-index: 1010; /* Higher than base modal */
+    z-index: 1030; /* Higher than base modal */
 }
 #roundRobinDisplayModal .modal-content {
     max-width: 48rem; /* 3xl in Tailwind */
