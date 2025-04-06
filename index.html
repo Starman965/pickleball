@@ -81,6 +81,25 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
+        .screenshots {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .screenshot {
+            text-align: center;
+        }
+
+        .screenshot img {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+        }
+
         footer {
             background-color: var(--card-background);
             padding: 20px;
@@ -136,6 +155,21 @@
                 <p>Review your past games, including scores and players. Track your progress and remember those epic matches.</p>
             </div>
         </div>
+
+        <section class="screenshots">
+            <div class="screenshot">
+                <img src="Game History.png" alt="Game History Screen - Track your pickleball matches">
+            </div>
+            <div class="screenshot">
+                <img src="Stats.png" alt="Stats Screen - Monitor your progress">
+            </div>
+            <div class="screenshot">
+                <img src="New Game.png" alt="New Game Screen - Easy team setup">
+            </div>
+            <div class="screenshot">
+                <img src="Player List.png" alt="Player List Screen - Manage your players">
+            </div>
+        </section>
 
         <section>
             <h2>About Me</h2>
