@@ -3,191 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>David Lewis - Pickleball Enthusiast & App Developer</title>
+    <title>Pickleball Tracker - Track Your Games</title>
     <style>
-        :root {
-            --primary-color: #007AFF;
-            --text-color: #333;
-            --background-color: #f5f5f7;
-            --card-background: #ffffff;
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
             margin: 0;
-            padding: 0;
-            background-color: var(--background-color);
-            color: var(--text-color);
-        }
-
-        header {
-            background-color: var(--card-background);
-            padding: 60px 20px;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .container {
+            padding: 20px;
             max-width: 800px;
             margin: 0 auto;
-            padding: 40px 20px;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
         }
-
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            color: var(--primary-color);
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
         }
-
-        .subtitle {
-            font-size: 1.2em;
-            color: #666;
-            margin-bottom: 30px;
-        }
-
-        .app-section {
-            background-color: var(--card-background);
-            border-radius: 12px;
-            padding: 30px;
-            margin: 40px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
         .app-icon {
             width: 120px;
             height: 120px;
-            border-radius: 24px;
+            border-radius: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-
-        .app-store-badge {
-            height: 40px;
-            margin-top: 20px;
+        .download-button {
+            display: inline-block;
+            background-color: #0071e3;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+            margin: 10px;
         }
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 40px 0;
+        .download-button:hover {
+            background-color: #0077ED;
         }
-
-        .feature-card {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: 8px;
+        .feature-section {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px 0;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        .screenshots {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 30px;
-            margin: 40px 0;
-        }
-
-        .screenshot {
-            text-align: center;
-        }
-
-        .screenshot img {
-            width: 100%;
-            max-width: 300px;
-            border-radius: 25px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            margin-bottom: 15px;
-        }
-
-        footer {
-            background-color: var(--card-background);
-            padding: 20px;
-            text-align: center;
-            margin-top: 60px;
-        }
-
-        a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        .privacy-link {
-            margin-top: 20px;
+        .support-button {
             display: inline-block;
+            background-color: #f5f5f7;
+            color: #0071e3;
+            padding: 12px 30px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+            margin: 10px;
+            border: 2px solid #0071e3;
+        }
+        .support-button:hover {
+            background-color: #0071e3;
+            color: white;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #86868b;
+        }
+        .device-section {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .device-item {
+            text-align: center;
+            margin: 10px;
+        }
+        .device-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>David Lewis</h1>
-        <p class="subtitle">Pickleball Enthusiast & App Developer</p>
-    </header>
-
-    <div class="container">
-        <section class="app-section">
-            <img src="pickleball_tracker_splash_icon.png" alt="Pickleball Tracker Icon" class="app-icon">
-            <h2>Pickleball Tracker</h2>
-            <p>As a passionate pickleball player, I understand the importance of tracking progress and remembering great matches. That's why I created Pickleball Tracker – a simple, intuitive app designed to enhance your pickleball experience.</p>
-            
-            <a href="https://apps.apple.com/us/app/pickleball-tracker/id6744275703">
-                <img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg" 
-                     alt="Download on the App Store" 
-                     class="app-store-badge">
-            </a>
-        </section>
-
-        <div class="features">
-            <div class="feature-card">
-                <h3>Track Your Games</h3>
-                <p>Record scores, teammates, and opponents for every match you play. Keep a detailed history of your pickleball journey.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Player Management</h3>
-                <p>Easily manage your regular playing partners and opponents. Quick access to player selection makes recording games a breeze.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Match History</h3>
-                <p>Review your past games, including scores and players. Track your progress and remember those epic matches.</p>
-            </div>
+    <div class="header">
+        <img src="app-icon.png" alt="Pickleball Tracker Icon" class="app-icon">
+        <h1>Pickleball Tracker</h1>
+        <p>Track your pickleball games, stats, and progress on iPhone and Apple Watch</p>
+        <a href="https://apps.apple.com/app/id123456789" class="download-button">Download on the App Store</a>
+        <div>
+            <a href="support.html" class="support-button">Support</a>
+            <a href="feedback.html" class="support-button">Send Feedback</a>
         </div>
-
-        <section class="screenshots">
-             <div class="screenshot">
-                <img src="New Game.png" alt="New Game Screen - Easy team setup">
-            </div>
-            <div class="screenshot">
-                <img src="Player List.png" alt="Player List Screen - Manage your players">
-            </div>
-            
-            <div class="screenshot">
-                <img src="Game History.png" alt="Game History Screen - Track your pickleball matches">
-            </div>
-            <div class="screenshot">
-                <img src="Stats.png" alt="Stats Screen - Monitor your growth">
-            </div>
-              <div class="screenshot">
-                <img src="badges.png" alt="Earn Badges - Rewards for your progress">
-            </div>
-        </section>
-
-        <section>
-            <h2>About Me</h2>
-            <p>I discovered pickleball a few years ago and was immediately hooked by its unique blend of strategy, skill, and social interaction. As both a player and developer, I saw an opportunity to create something that would help players like me track their games and progress.</p>
-            <p>Pickleball Tracker is the result of combining my passion for the sport with my software development skills. It's designed to be the perfect companion for players who want to focus on their game while having a reliable way to track their matches.</p>
-        </section>
-
-       <a href="./support.html" class="privacy-link">Support and FAQ</a>
-        <p></p>
-        <a href="./privacy.html" class="privacy-link">Privacy Policy</a>
     </div>
 
-    <footer>
-        <p>&copy; 2025 Dave Lewis. All rights reserved.</p>
-    </footer>
+    <div class="feature-section">
+        <h2>Now Available for iPhone and Apple Watch!</h2>
+        <div class="device-section">
+            <div class="device-item">
+                <div class="device-icon">📱</div>
+                <h3>iPhone App</h3>
+                <p>Track games, manage players, and view detailed stats</p>
+            </div>
+            <div class="device-item">
+                <div class="device-icon">⌚️</div>
+                <h3>Watch App</h3>
+                <p>Quick game entry right from your wrist</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="feature-section">
+        <h2>Key Features</h2>
+        <ul>
+            <li>Easy game recording with team assignments</li>
+            <li>Track your win/loss record</li>
+            <li>View game history and stats</li>
+            <li>Manage your player list</li>
+            <li>Earn achievement badges</li>
+            <li>Apple Watch companion app for quick game entry</li>
+            <li>Sync between iPhone and Apple Watch</li>
+        </ul>
+    </div>
+
+    <div class="feature-section">
+        <h2>Perfect for Pickleball Players</h2>
+        <p>Whether you're playing at your local court or in a tournament, Pickleball Tracker helps you keep track of your games and improvement. With the new Apple Watch app, recording games is easier than ever - no need to pull out your phone between matches!</p>
+    </div>
+
+    <div class="footer">
+        <p>© 2025 Pickleball Tracker. All rights reserved.</p>
+    </div>
 </body>
 </html> 
