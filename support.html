@@ -5,100 +5,181 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support - Pickleball Tracker</title>
     <style>
+        :root {
+            --primary-color: #007AFF;
+            --text-color: #333;
+            --background-color: #f5f5f7;
+            --card-background: #ffffff;
+        }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             line-height: 1.6;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        header {
+            background-color: var(--card-background);
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .container {
             max-width: 800px;
             margin: 0 auto;
-            background-color: #f5f5f7;
-            color: #1d1d1f;
+            padding: 40px 20px;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .app-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 20px;
+
+        h1 {
+            font-size: 2.5em;
             margin-bottom: 20px;
+            color: var(--primary-color);
         }
-        .back-button {
-            display: inline-block;
-            color: #0071e3;
-            text-decoration: none;
-            margin-bottom: 20px;
+
+        h2 {
+            color: var(--primary-color);
+            margin-top: 40px;
         }
-        .faq-section {
-            background: white;
+
+        .welcome-message {
+            background-color: var(--card-background);
+            border-radius: 12px;
             padding: 30px;
-            border-radius: 20px;
-            margin: 20px 0;
+            margin: 40px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .faq-section {
+            margin-top: 40px;
+        }
+
+        .faq-item {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .question {
-            font-weight: 600;
-            color: #1d1d1f;
+
+        .faq-item h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        .contact-section {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .email-button {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+
+        .email-button:hover {
+            opacity: 0.9;
+        }
+
+        footer {
+            background-color: var(--card-background);
+            padding: 20px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        nav {
             margin-top: 20px;
         }
-        .answer {
-            color: #424245;
-            margin-bottom: 20px;
+
+        nav a {
+            color: var(--primary-color);
+            text-decoration: none;
+            margin: 0 10px;
         }
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            color: #86868b;
+
+        nav a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <a href="index.html" class="back-button">← Back to Home</a>
-        <img src="app-icon.png" alt="Pickleball Tracker Icon" class="app-icon">
-        <h1>Support</h1>
-        <p>Frequently Asked Questions</p>
+    <header>
+        <h1>Pickleball Tracker Support</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="privacy.html">Privacy Policy</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="welcome-message">
+            <h2>Welcome to the Pickleball Tracker Family! 🎉</h2>
+            <p>Thank you for choosing Pickleball Tracker! Your support means the world to me, and I'm committed to making your experience with the app as enjoyable as possible. I deeply value your feedback and suggestions - they're essential in helping make the app even better for our pickleball community.</p>
+        </div>
+
+        <section class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+
+            <div class="faq-item">
+                <h3>How do I start tracking a new game?</h3>
+                <p>Tap the "+" icon at the bottom of the screen to start a new game. You can easily add players to both teams, set up the scoring, and begin tracking your match right away. The interface is designed to be quick and intuitive, letting you focus on your game.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>How do I add new players?</h3>
+                <p>You can add new players in two ways:
+                    <ul>
+                        <li>From the Players tab, tap the "+" in the top right corner</li>
+                        <li>While setting up a new game, tap "ADD TEAMMATE" or "ADD OPPONENT"</li>
+                    </ul>
+                    Once added, players will be available for all future games.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>Is my data backed up?</h3>
+                <p>Currently, all data is stored locally on your device. Make sure to keep your device backed up through iCloud or iTunes to preserve your game history. I'm exploring adding direct iCloud sync in a future update.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>How do I view my statistics?</h3>
+                <p>Tap the "Stats" tab to view your comprehensive playing statistics. You can see your total wins, losses, and win percentage. The stats view offers both lifetime statistics and your performance over your last 10 games.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>Can I edit or delete a game after it's recorded?</h3>
+                <p>Yes! From the History tab, you can view all your recorded games. If you need to make changes or remove a game, just tap on the game you want to modify.</p>
+            </div>
+
+            <div class="faq-item">
+                <h3>How do I track games with different scoring rules?</h3>
+                <p>The app is designed to be flexible with scoring. When creating a new game, you can enter any final score that matches your playing format, whether you're playing to 11, 15, or using a different scoring system.</p>
+            </div>
+        </section>
+
+        <div class="contact-section">
+            <h2>Need More Help?</h2>
+            <p>I'm here to help! If you have any questions, suggestions, or just want to share your experience with the app, please don't hesitate to reach out. Your feedback helps make Pickleball Tracker better for everyone.</p>
+            <a href="mailto:demandgendave@gmail.com" class="email-button">Contact Support</a>
+        </div>
     </div>
 
-    <div class="faq-section">
-        <h2>General Questions</h2>
-        
-        <div class="question">How do I add players to my list?</div>
-        <div class="answer">Tap the "Players" tab, then tap the "+" button in the top right corner. Enter the player's name and tap "Save".</div>
-        
-        <div class="question">Can I edit or delete a game after it's recorded?</div>
-        <div class="answer">Yes! In the History tab, swipe left on any game to reveal the delete option. Note: This action cannot be undone.</div>
-        
-        <div class="question">How are stats calculated?</div>
-        <div class="answer">Stats are calculated based on your recorded games. Win percentage is calculated by dividing your total wins by total games played.</div>
-    </div>
-
-    <div class="faq-section">
-        <h2>Apple Watch App</h2>
-        
-        <div class="question">Do I need to have my iPhone nearby to use the Watch app?</div>
-        <div class="answer">The Watch app can function independently, but it needs to sync with your iPhone periodically to update player lists and transfer game data.</div>
-        
-        <div class="question">How do I sync my Watch app with my iPhone?</div>
-        <div class="answer">The apps sync automatically when your devices are connected. Games recorded on your Watch will transfer to your iPhone when they're in range.</div>
-        
-        <div class="question">What happens if I record a game when my iPhone is out of range?</div>
-        <div class="answer">Don't worry! The game will be stored on your Watch and automatically sync to your iPhone when the devices reconnect.</div>
-        
-        <div class="question">Can I add new players from the Watch app?</div>
-        <div class="answer">Player management is handled through the iPhone app. New players added on your iPhone will sync to your Watch automatically.</div>
-    </div>
-
-    <div class="faq-section">
-        <h2>Still Have Questions?</h2>
-        <p>If you can't find the answer you're looking for, please email us at demandgendave@gmail.com</p>
-    </div>
-
-    <div class="footer">
-        <p>© 2025 Pickleball Tracker. All rights reserved.</p>
-    </div>
+    <footer>
+        <p>&copy; 2025 David Lewis. All rights reserved.</p>
+    </footer>
 </body>
 </html> 
