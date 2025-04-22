@@ -63,6 +63,63 @@ nav a.active {
     margin-bottom: 40px;
 }
 
+/* Media query for mobile devices */
+@media (max-width: 768px) {
+    .hero-app-wrapper {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+
+    .hero-section {
+        margin: 0 auto;
+        max-width: 300px;
+    }
+
+    .hero-image {
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    .app-section {
+        padding: 0 20px;
+    }
+
+    .app-section h2 {
+        font-size: 24px;
+        margin-top: 10px;
+    }
+
+    .app-section p {
+        font-size: 16px;
+        line-height: 1.5;
+    }
+
+    .app-store-badge {
+        margin: 20px auto;
+    }
+
+    .container {
+        padding: 0 15px;
+    }
+}
+
+/* Ensure proper spacing and alignment for larger screens */
+@media (min-width: 769px) {
+    .hero-app-wrapper {
+        align-items: center;
+    }
+
+    .hero-section {
+        flex: 0 0 auto;
+    }
+
+    .app-section {
+        flex: 1;
+        text-align: left;
+    }
+}
+
 .hero-section {
     flex: 0 0 auto;
     margin: 0;
