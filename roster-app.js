@@ -964,19 +964,19 @@ function renderPlayersAdminControls() {
     });
   });
 
-  playersAdminGrid.append(createCard.card);
-
   if (!players.length) {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
     empty.textContent = "No players are loaded yet. Use the card above to create the first player.";
     playersAdminGrid.append(empty);
+    playersAdminGrid.append(createCard.card);
     updatePlayersAdminPager();
     return;
   }
 
   const player = players[playerAdminIndex];
   playersAdminGrid.append(buildExistingPlayerAdminCard(player));
+  playersAdminGrid.append(createCard.card);
   updatePlayersAdminPager();
 }
 
@@ -1109,19 +1109,19 @@ function renderGamesAdminControls() {
     });
   });
 
-  adminGrid.append(createCard.card);
-
   if (!games.length) {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
     empty.textContent = "No games available to edit yet. Use the card above to create the first one.";
     adminGrid.append(empty);
+    adminGrid.append(createCard.card);
     updateGamesAdminPager();
     return;
   }
 
   const game = games[gameAdminIndex];
   adminGrid.append(buildExistingGameAdminCard(game));
+  adminGrid.append(createCard.card);
   updateGamesAdminPager();
 }
 
