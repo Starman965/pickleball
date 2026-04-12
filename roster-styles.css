@@ -63,7 +63,6 @@ input {
 }
 
 .hero__content,
-.hero__brand,
 .panel,
 .game-card {
   border: 1px solid var(--line);
@@ -77,26 +76,24 @@ input {
   border-radius: var(--radius-xl);
 }
 
-.hero__brand {
-  border-radius: var(--radius-xl);
-  padding: 1rem;
+.hero__title-row {
   display: grid;
-  place-items: center;
-  background:
-    linear-gradient(145deg, rgba(255, 200, 61, 0.12), rgba(255, 140, 50, 0.06)),
-    var(--panel-strong);
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.85rem;
 }
 
-.hero__logo-wrap {
-  width: min(100%, 360px);
+.hero__logo-inline-wrap {
+  width: clamp(72px, 16vw, 112px);
   aspect-ratio: 1 / 1;
-  border-radius: 24px;
+  border-radius: 18px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.96);
-  padding: 0.6rem;
+  padding: 0.45rem;
+  flex-shrink: 0;
 }
 
-.hero__logo {
+.hero__logo-inline {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -125,7 +122,7 @@ p {
 h1 {
   font-size: clamp(2rem, 6vw, 4rem);
   line-height: 0.95;
-  max-width: 10ch;
+  max-width: 11ch;
 }
 
 h2 {
@@ -684,12 +681,10 @@ select.field__input option {
   }
 
   .hero {
-    grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
     padding: 0;
   }
 
   .hero__content,
-  .hero__brand,
   .panel {
     padding: 1.45rem;
   }
