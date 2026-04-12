@@ -258,6 +258,9 @@ function setStatus(message, tone = "") {
   if (tone) {
     statusBanner.classList.add(`is-${tone}`);
   }
+  if (!tone || tone === "success") {
+    statusBanner.classList.add("is-hidden");
+  }
 }
 
 function setAdminStatus(message, tone = "") {
@@ -265,6 +268,9 @@ function setAdminStatus(message, tone = "") {
   adminStatus.className = "admin-status";
   if (tone) {
     adminStatus.classList.add(`is-${tone}`);
+  }
+  if (!tone || tone === "success") {
+    adminStatus.classList.add("is-hidden");
   }
 }
 
@@ -278,11 +284,11 @@ function refreshAdminSessionUi() {
   adminSignOut.hidden = !adminUser;
 
   if (isApprovedAdmin) {
-    adminHelperText.textContent = "This account can manage players and edit the live game schedule.";
+    adminHelperText.textContent = "You can update players, dates, and locations from here.";
   } else if (adminUser) {
-    adminHelperText.textContent = "This Google account is signed in, but it is not on the approved admin list.";
+    adminHelperText.textContent = "This account is signed in, but it does not have access to make changes.";
   } else {
-    adminHelperText.textContent = "Sign in with an approved Google account to manage the roster and schedule.";
+    adminHelperText.textContent = "Sign in to update the roster and schedule.";
   }
 
   const currentUser = adminUser?.email ?? "none";
@@ -297,7 +303,7 @@ async function beginAdminSignIn() {
     if (shouldPreferRedirectSignIn()) {
       lastAuthEvent = "Using redirect sign-in flow";
       refreshAdminSessionUi();
-      setAdminStatus("Redirecting to Google sign-in...", "success");
+      setAdminStatus("Opening Google sign-in...", "success");
       await signInWithRedirect(auth, googleProvider);
       return;
     }
@@ -322,21 +328,21 @@ async function beginAdminSignIn() {
       try {
         lastAuthEvent = `Popup failed with ${error.code}; falling back to redirect`;
         refreshAdminSessionUi();
-        setAdminStatus("Popup sign-in was blocked. Falling back to redirect...", "warning");
+        setAdminStatus("Sign-in popup was blocked. Trying again another way...", "warning");
         await signInWithRedirect(auth, googleProvider);
         return;
       } catch (redirectError) {
         console.error(redirectError);
         lastAuthEvent = `Redirect fallback failed with ${redirectError.code ?? "unknown error"}`;
         refreshAdminSessionUi();
-        setAdminStatus("Google sign-in could not start. Verify Google Auth and authorized domains.", "error");
+        setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
         return;
       }
     }
 
     lastAuthEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
     refreshAdminSessionUi();
-    setAdminStatus("Google sign-in could not start. Verify Google Auth and authorized domains.", "error");
+    setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
   }
 }
 
@@ -538,7 +544,7 @@ function buildAdminPlayerCard(player, options = {}) {
   const lastNameInput = fragment.querySelector('[data-role="last-name-input"]');
 
   title.textContent = options.title ?? player.fullName;
-  meta.textContent = options.meta ?? "Edit player name and active roster status.";
+  meta.textContent = options.meta ?? "Update a player's name or remove them from the active list.";
   badge.textContent = player.active ? "Active" : "Inactive";
   firstNameInput.value = player.firstName;
   lastNameInput.value = player.lastName;
@@ -568,7 +574,7 @@ function renderPlayersAdminControls() {
     },
     {
       title: "Add player",
-      meta: "Create a new roster entry with first and last name.",
+      meta: "Add a new player to the roster.",
     },
   );
 
@@ -745,7 +751,7 @@ function renderGames() {
   if (!games.length) {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
-    empty.textContent = "No games available yet. An approved admin can sign in and seed the schedule.";
+    empty.textContent = "No games available yet.";
     gamesGrid.append(empty);
     return;
   }
@@ -860,7 +866,7 @@ async function updateAttendance(gameId, playerId, status) {
 
 async function updateGameDetails(gameId, updates) {
   if (!isApprovedAdmin) {
-    setAdminStatus("Sign in with an approved Google account before editing the schedule.", "error");
+    setAdminStatus("Sign in first to update the schedule.", "error");
     return;
   }
 
@@ -886,7 +892,7 @@ async function updateGameDetails(gameId, updates) {
     setAdminStatus("Game details saved to Firebase.", "success");
   } catch (error) {
     console.error(error);
-    setAdminStatus("Could not save game details. Check Firestore admin write access.", "error");
+    setAdminStatus("Could not save those changes right now.", "error");
   } finally {
     savingState = false;
     renderGames();
@@ -897,7 +903,7 @@ async function updateGameDetails(gameId, updates) {
 
 async function createGame(updates) {
   if (!isApprovedAdmin) {
-    setAdminStatus("Sign in with an approved Google account before creating a game.", "error");
+    setAdminStatus("Sign in first to add a game.", "error");
     return;
   }
 
@@ -929,7 +935,7 @@ async function createGame(updates) {
     setAdminStatus("New game created.", "success");
   } catch (error) {
     console.error(error);
-    setAdminStatus("Could not create the game. Check Firestore admin write access.", "error");
+    setAdminStatus("Could not create that game right now.", "error");
   } finally {
     savingState = false;
     renderGames();
@@ -940,7 +946,7 @@ async function createGame(updates) {
 
 async function deleteGame(gameId, gameName) {
   if (!isApprovedAdmin) {
-    setAdminStatus("Sign in with an approved Google account before deleting a game.", "error");
+    setAdminStatus("Sign in first to delete a game.", "error");
     return;
   }
 
@@ -955,7 +961,7 @@ async function deleteGame(gameId, gameName) {
     setAdminStatus("Game deleted.", "success");
   } catch (error) {
     console.error(error);
-    setAdminStatus("Could not delete the game. Check Firestore admin write access.", "error");
+    setAdminStatus("Could not delete that game right now.", "error");
   } finally {
     savingState = false;
     renderGames();
@@ -966,7 +972,7 @@ async function deleteGame(gameId, gameName) {
 
 async function createPlayer(updates) {
   if (!isApprovedAdmin) {
-    setAdminStatus("Sign in with an approved Google account before creating a player.", "error");
+    setAdminStatus("Sign in first to add a player.", "error");
     return;
   }
 
@@ -1000,7 +1006,7 @@ async function createPlayer(updates) {
     setAdminStatus(`${fullName} was added to the roster.`, "success");
   } catch (error) {
     console.error(error);
-    setAdminStatus("Could not create the player. Check Firestore admin write access.", "error");
+    setAdminStatus("Could not add that player right now.", "error");
   } finally {
     savingState = false;
     renderGames();
@@ -1011,7 +1017,7 @@ async function createPlayer(updates) {
 
 async function updatePlayer(player, updates) {
   if (!isApprovedAdmin) {
-    setAdminStatus("Sign in with an approved Google account before editing a player.", "error");
+    setAdminStatus("Sign in first to edit a player.", "error");
     return;
   }
 
@@ -1044,7 +1050,7 @@ async function updatePlayer(player, updates) {
     setAdminStatus(`${fullName} was updated.`, "success");
   } catch (error) {
     console.error(error);
-    setAdminStatus("Could not update the player. Check Firestore admin write access.", "error");
+    setAdminStatus("Could not update that player right now.", "error");
   } finally {
     savingState = false;
     renderGames();
@@ -1055,7 +1061,7 @@ async function updatePlayer(player, updates) {
 
 async function setPlayerActiveState(playerId, active, fullName) {
   if (!isApprovedAdmin) {
-    setAdminStatus("Sign in with an approved Google account before changing roster status.", "error");
+    setAdminStatus("Sign in first to update the roster.", "error");
     return;
   }
 
@@ -1079,7 +1085,7 @@ async function setPlayerActiveState(playerId, active, fullName) {
     setAdminStatus(`${fullName} is now ${active ? "active" : "inactive"}.`, "success");
   } catch (error) {
     console.error(error);
-    setAdminStatus("Could not update roster status. Check Firestore admin write access.", "error");
+    setAdminStatus("Could not update that player right now.", "error");
   } finally {
     savingState = false;
     renderPlayerSelect();
@@ -1102,7 +1108,7 @@ async function initializeAdminAuth() {
     console.error(error);
     lastAuthEvent = `Redirect sign-in failed with ${error.code ?? "unknown error"}`;
     refreshAdminSessionUi();
-    setAdminStatus("Google sign-in is not ready. Enable Google Auth and add your site domain in Firebase.", "error");
+    setAdminStatus("Google sign-in is not ready yet. Check the Firebase sign-in setup.", "error");
   }
 
   onAuthStateChanged(auth, async (user) => {
@@ -1114,18 +1120,18 @@ async function initializeAdminAuth() {
     refreshAdminSessionUi();
 
     if (isApprovedAdmin) {
-      setAdminStatus(`Signed in as ${user.email}. Admin tools are enabled.`, "success");
+      setAdminStatus(`Signed in as ${user.email}.`, "success");
       try {
         await seedPlayersIfNeeded();
         await seedGamesIfNeeded();
       } catch (error) {
         console.error(error);
-        setAdminStatus("Signed in, but could not seed or load admin data. Check Firestore permissions.", "error");
+        setAdminStatus("Signed in, but some team data could not be loaded.", "error");
       }
     } else if (user) {
-      setAdminStatus(`${user.email} is signed in, but not on the approved admin list.`, "error");
+      setAdminStatus(`${user.email} is signed in, but this account cannot make changes.`, "error");
     } else {
-      setAdminStatus("Admin tools are locked. Sign in with an approved Google account.", "");
+      setAdminStatus("Sign in to make changes.", "");
     }
 
     renderPlayersAdminControls();
@@ -1192,7 +1198,7 @@ function bootstrapGamesListener() {
 renderPlayerSelect();
 renderGames();
 refreshAdminSessionUi();
-setAdminStatus("Admin tools are locked. Sign in with an approved Google account.", "");
+setAdminStatus("Sign in to make changes.", "");
 bootstrapPlayersListener();
 bootstrapGamesListener();
 initializeAdminAuth();

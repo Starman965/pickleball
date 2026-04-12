@@ -66,7 +66,6 @@
               <p class="panel__eyebrow">Your status</p>
               <h2>Choose your name</h2>
             </div>
-            <span class="live-pill">Live with Firebase</span>
           </div>
 
           <div class="selector-row">
@@ -80,11 +79,11 @@
             <div class="selection-summary">
               <span class="selection-summary__label">Selected player</span>
               <strong id="selected-player-name">None selected</strong>
-              <p>Only your row shows update buttons, keeping the mobile UI clean.</p>
+              <p>Select your name to quickly update your availability for each game.</p>
             </div>
           </div>
 
-          <div class="status-banner" id="status-banner" aria-live="polite">
+          <div class="status-banner is-hidden" id="status-banner" aria-live="polite">
             Loading games from Firebase...
           </div>
         </section>
@@ -103,22 +102,17 @@
         <section class="panel panel--muted">
           <div class="panel__header">
             <div>
-              <p class="panel__eyebrow">Admin tools</p>
-              <h2>Edit game schedule</h2>
+              <p class="panel__eyebrow">Team Tools</p>
+              <h2>Game and Player Manager: Admin Only</h2>
             </div>
-          </div>
-
-          <div class="admin-note">
-            Only approved admins can sign in with Google to update game dates,
-            locations, and match labels. Players do not need an account.
           </div>
 
           <div class="admin-auth">
             <div class="selection-summary">
-              <span class="selection-summary__label">Admin account</span>
+              <span class="selection-summary__label">Signed-in account</span>
               <strong id="admin-user-email">Not signed in</strong>
               <p id="admin-helper-text">
-                Sign in with an approved Google account to manage the schedule.
+                Sign in to manage the roster and schedule.
               </p>
             </div>
 
@@ -132,8 +126,8 @@
             </div>
           </div>
 
-          <div class="admin-status" id="admin-status">
-            Admin tools are locked.
+          <div class="admin-status is-hidden" id="admin-status">
+            Sign in to make changes.
           </div>
 
           <div class="admin-debug" id="admin-debug"></div>
@@ -141,7 +135,7 @@
           <div class="admin-subsection">
             <div class="panel__header">
               <div>
-                <p class="panel__eyebrow">Roster manager</p>
+                <p class="panel__eyebrow">Roster</p>
                 <h3>Players</h3>
               </div>
             </div>
@@ -152,7 +146,7 @@
           <div class="admin-subsection">
             <div class="panel__header">
               <div>
-                <p class="panel__eyebrow">Schedule manager</p>
+                <p class="panel__eyebrow">Schedule</p>
                 <h3>Games</h3>
               </div>
             </div>
@@ -218,19 +212,6 @@
           </template>
         </section>
 
-        <section class="panel panel--muted">
-          <div class="panel__header">
-            <div>
-              <p class="panel__eyebrow">Roster reference</p>
-              <h2>Team list</h2>
-            </div>
-          </div>
-
-          <details class="roster-reference">
-            <summary>Open roster image</summary>
-            <img src="./roster.jpg" alt="Hawk'n'Roll roster reference" />
-          </details>
-        </section>
       </main>
     </div>
 
