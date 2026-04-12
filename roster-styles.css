@@ -397,6 +397,14 @@ select.field__input option {
   margin-top: 0;
 }
 
+.admin-games-board {
+  margin-top: 1rem;
+}
+
+.admin-games-board .admin-grid {
+  margin-top: 0;
+}
+
 .admin-card {
   padding: 1rem;
   border-radius: var(--radius-lg);

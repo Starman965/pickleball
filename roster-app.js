@@ -183,6 +183,10 @@ const nextGame = document.getElementById("next-game");
 const adminStatus = document.getElementById("admin-status");
 const adminDebug = document.getElementById("admin-debug");
 const adminGrid = document.getElementById("admin-grid");
+const adminGamesPager = document.getElementById("admin-games-pager");
+const adminGamesPrev = document.getElementById("admin-games-prev");
+const adminGamesNext = document.getElementById("admin-games-next");
+const adminGamesPagerLabel = document.getElementById("admin-games-pager-label");
 const playersAdminGrid = document.getElementById("players-admin-grid");
 const playersAdminPager = document.getElementById("players-admin-pager");
 const playersAdminPrev = document.getElementById("players-admin-prev");
@@ -203,6 +207,8 @@ let games = [];
 let savingState = false;
 let gameBoardIndex = 0;
 let lastGamesSignature = "";
+let gameAdminIndex = 0;
+let lastGamesAdminSignature = "";
 let playerAdminIndex = 0;
 let lastPlayersSignature = "";
 let adminUser = null;
@@ -931,10 +937,98 @@ function renderPlayersAdminControls() {
   updatePlayersAdminPager();
 }
 
+function syncGameAdminIndex() {
+  const signature = games.map((game) => game.id).join("\n");
+
+  if (signature !== lastGamesAdminSignature) {
+    lastGamesAdminSignature = signature;
+    gameAdminIndex = 0;
+    return;
+  }
+
+  if (!games.length) {
+    gameAdminIndex = 0;
+    return;
+  }
+
+  if (gameAdminIndex < 0 || gameAdminIndex >= games.length) {
+    gameAdminIndex = 0;
+  }
+}
+
+function updateGamesAdminPager() {
+  if (!adminGamesPager || !adminGamesPagerLabel || !adminGamesPrev || !adminGamesNext) {
+    return;
+  }
+
+  const total = games.length;
+
+  if (total <= 1 || !isApprovedAdmin) {
+    adminGamesPager.classList.add("is-hidden");
+    return;
+  }
+
+  adminGamesPager.classList.remove("is-hidden");
+  adminGamesPagerLabel.textContent = `Game ${gameAdminIndex + 1} of ${total}`;
+  adminGamesPrev.disabled = gameAdminIndex <= 0 || savingState;
+  adminGamesNext.disabled = gameAdminIndex >= total - 1 || savingState;
+}
+
+function buildExistingGameAdminCard(game) {
+  const adminCard = buildAdminGameCard(game);
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "action-btn";
+  resetButton.textContent = "Reset";
+  resetButton.disabled = savingState;
+  resetButton.addEventListener("click", () => {
+    adminCard.dateInput.value = game.isoDate.slice(0, 10);
+    adminCard.timeInput.value = pacificTimeInputValueFromIso(game.isoDate);
+    adminCard.locationInput.value = game.location;
+    adminCard.opponentInput.value = game.opponent;
+  });
+
+  const saveButton = document.createElement("button");
+  saveButton.type = "submit";
+  saveButton.className = "action-btn action-btn--active";
+  saveButton.textContent = "Save";
+  saveButton.disabled = savingState;
+
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "action-btn action-btn--danger";
+  deleteButton.textContent = "Delete";
+  deleteButton.disabled = savingState;
+  deleteButton.addEventListener("click", async () => {
+    const confirmed = window.confirm(`Delete "${game.opponent}" on ${game.dateLabel}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    await deleteGame(game.id, game.opponent);
+  });
+
+  adminCard.actions.append(resetButton, saveButton, deleteButton);
+  adminCard.form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await updateGameDetails(game.id, {
+      scheduledDate: adminCard.dateInput.value,
+      scheduledTime: adminCard.timeInput.value,
+      location: adminCard.locationInput.value.trim(),
+      opponent: adminCard.opponentInput.value.trim(),
+    });
+  });
+
+  return adminCard.card;
+}
+
 function renderGamesAdminControls() {
+  syncGameAdminIndex();
   adminGrid.innerHTML = "";
 
   if (!isApprovedAdmin) {
+    updateGamesAdminPager();
     return;
   }
 
@@ -978,57 +1072,13 @@ function renderGamesAdminControls() {
     empty.className = "games-grid__empty";
     empty.textContent = "No games available to edit yet. Use the card above to create the first one.";
     adminGrid.append(empty);
+    updateGamesAdminPager();
     return;
   }
 
-  games.forEach((game) => {
-    const adminCard = buildAdminGameCard(game);
-
-    const resetButton = document.createElement("button");
-    resetButton.type = "button";
-    resetButton.className = "action-btn";
-    resetButton.textContent = "Reset";
-    resetButton.disabled = savingState;
-    resetButton.addEventListener("click", () => {
-      adminCard.dateInput.value = game.isoDate.slice(0, 10);
-      adminCard.timeInput.value = pacificTimeInputValueFromIso(game.isoDate);
-      adminCard.locationInput.value = game.location;
-      adminCard.opponentInput.value = game.opponent;
-    });
-
-    const saveButton = document.createElement("button");
-    saveButton.type = "submit";
-    saveButton.className = "action-btn action-btn--active";
-    saveButton.textContent = "Save";
-    saveButton.disabled = savingState;
-
-    const deleteButton = document.createElement("button");
-    deleteButton.type = "button";
-    deleteButton.className = "action-btn action-btn--danger";
-    deleteButton.textContent = "Delete";
-    deleteButton.disabled = savingState;
-    deleteButton.addEventListener("click", async () => {
-      const confirmed = window.confirm(`Delete "${game.opponent}" on ${game.dateLabel}?`);
-      if (!confirmed) {
-        return;
-      }
-
-      await deleteGame(game.id, game.opponent);
-    });
-
-    adminCard.actions.append(resetButton, saveButton, deleteButton);
-    adminCard.form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      await updateGameDetails(game.id, {
-        scheduledDate: adminCard.dateInput.value,
-        scheduledTime: adminCard.timeInput.value,
-        location: adminCard.locationInput.value.trim(),
-        opponent: adminCard.opponentInput.value.trim(),
-      });
-    });
-
-    adminGrid.append(adminCard.card);
-  });
+  const game = games[gameAdminIndex];
+  adminGrid.append(buildExistingGameAdminCard(game));
+  updateGamesAdminPager();
 }
 
 function renderGames() {
@@ -1439,6 +1489,20 @@ gamesNext.addEventListener("click", () => {
   if (gameBoardIndex < games.length - 1) {
     gameBoardIndex += 1;
     renderGames();
+  }
+});
+
+adminGamesPrev.addEventListener("click", () => {
+  if (gameAdminIndex > 0) {
+    gameAdminIndex -= 1;
+    renderGamesAdminControls();
+  }
+});
+
+adminGamesNext.addEventListener("click", () => {
+  if (gameAdminIndex < games.length - 1) {
+    gameAdminIndex += 1;
+    renderGamesAdminControls();
   }
 });
 

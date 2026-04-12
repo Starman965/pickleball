@@ -194,7 +194,34 @@
               </div>
             </div>
 
-          <div class="admin-grid" id="admin-grid"></div>
+            <div class="admin-games-board">
+              <div
+                id="admin-games-pager"
+                class="games-pager is-hidden"
+                role="navigation"
+                aria-label="Browse admin games"
+              >
+                <button
+                  type="button"
+                  id="admin-games-prev"
+                  class="games-pager__btn action-btn"
+                >
+                  Previous
+                </button>
+                <span
+                  id="admin-games-pager-label"
+                  class="games-pager__label"
+                ></span>
+                <button
+                  type="button"
+                  id="admin-games-next"
+                  class="games-pager__btn action-btn"
+                >
+                  Next
+                </button>
+              </div>
+              <div class="admin-grid" id="admin-grid"></div>
+            </div>
           </div>
 
           <template id="admin-card-template">
