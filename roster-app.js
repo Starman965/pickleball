@@ -342,7 +342,9 @@ function refreshAdminSessionUi() {
 
   const currentUser = adminUser?.email ?? "none";
   const approval = adminUser ? (isApprovedAdmin ? "approved admin" : "not approved") : "signed out";
-  const signInMode = shouldPreferRedirectSignIn() ? "redirect (mobile)" : "popup (desktop)";
+  const signInMode = shouldPreferRedirectSignIn()
+    ? "popup first, redirect fallback (mobile)"
+    : "popup first, redirect fallback";
   setAdminDebug(
     [
       `Host: ${window.location.host || "unknown"}`,
@@ -360,14 +362,6 @@ function refreshAdminSessionUi() {
 
 async function beginAdminSignIn() {
   try {
-    if (shouldPreferRedirectSignIn()) {
-      lastAuthFlowEvent = "Using redirect sign-in flow";
-      refreshAdminSessionUi();
-      setAdminStatus("Opening Google sign-in...", "success");
-      await signInWithRedirect(auth, googleProvider);
-      return;
-    }
-
     lastAuthFlowEvent = "Trying popup sign-in flow";
     refreshAdminSessionUi();
     setAdminStatus("Opening Google sign-in...", "success");
