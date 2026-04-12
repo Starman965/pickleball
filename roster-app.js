@@ -1078,8 +1078,8 @@ function renderGamesAdminControls() {
   const createCard = buildAdminGameCard(
     {
       isoDate: MOCK_GAMES[0].isoDate,
-      location: "Blackhawk Country Club - Court Assignment TBD",
-      opponent: "New Match Day",
+      location: "Blackhawk Country Club",
+      opponent: "VS.",
       timeLabel: "10:00 AM PT",
       dateLabel: MOCK_GAMES[0].dateLabel,
     },
