@@ -11,13 +11,15 @@
       name="description"
       content="Track upcoming Hawk'n'Roll pickleball games and mark attendance live from your phone."
     />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./roster-styles.css" />
   </head>
   <body>
     <div class="page-shell">
@@ -307,11 +309,11 @@
 
         <div class="game-card__summary">
           <div class="summary-chip summary-chip--in">
-            <span>In</span>
+            <span>Available</span>
             <strong data-role="in-count">0</strong>
           </div>
           <div class="summary-chip summary-chip--out">
-            <span>Out</span>
+            <span>Unavailable</span>
             <strong data-role="out-count">0</strong>
           </div>
           <div class="summary-chip">
@@ -333,10 +335,10 @@
 
         <div class="player-row__actions" data-role="player-actions">
           <button type="button" class="action-btn action-btn--in" data-status="in">
-            In
+            Available
           </button>
           <button type="button" class="action-btn action-btn--out" data-status="out">
-            Out
+            Unavailable
           </button>
           <button type="button" class="action-btn" data-status="unknown">
             Clear
@@ -345,6 +347,19 @@
       </div>
     </template>
 
-    <script type="module" src="./roster-app.js"></script>
+    <script>
+      (function loadFreshAssets() {
+        const cacheBust = Date.now();
+        const stylesheet = document.createElement("link");
+        stylesheet.rel = "stylesheet";
+        stylesheet.href = `./roster-styles.css?v=${cacheBust}`;
+        document.head.appendChild(stylesheet);
+
+        const appScript = document.createElement("script");
+        appScript.type = "module";
+        appScript.src = `./roster-app.js?v=${cacheBust}`;
+        document.body.appendChild(appScript);
+      })();
+    </script>
   </body>
 </html>

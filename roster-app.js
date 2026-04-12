@@ -575,11 +575,11 @@ function renderPlayerSelect() {
 
 function getStatusMeta(status) {
   if (status === "in") {
-    return { label: "Playing", className: "status-badge status-badge--in" };
+    return { label: "Available", className: "status-badge status-badge--in" };
   }
 
   if (status === "out") {
-    return { label: "Out", className: "status-badge status-badge--out" };
+    return { label: "Unavailable", className: "status-badge status-badge--out" };
   }
 
   return { label: "No response", className: "status-badge" };
