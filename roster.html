@@ -136,7 +136,27 @@
             Admin tools are locked.
           </div>
 
+          <div class="admin-subsection">
+            <div class="panel__header">
+              <div>
+                <p class="panel__eyebrow">Roster manager</p>
+                <h3>Players</h3>
+              </div>
+            </div>
+
+            <div class="players-admin-grid" id="players-admin-grid"></div>
+          </div>
+
+          <div class="admin-subsection">
+            <div class="panel__header">
+              <div>
+                <p class="panel__eyebrow">Schedule manager</p>
+                <h3>Games</h3>
+              </div>
+            </div>
+
           <div class="admin-grid" id="admin-grid"></div>
+          </div>
 
           <template id="admin-card-template">
             <article class="admin-card">
@@ -165,6 +185,32 @@
                 </label>
 
                 <div class="admin-form__actions" data-role="admin-actions"></div>
+              </form>
+            </article>
+          </template>
+
+          <template id="player-admin-template">
+            <article class="admin-card">
+              <div class="admin-card__header">
+                <div>
+                  <h3 data-role="player-title"></h3>
+                  <p class="admin-card__meta" data-role="player-meta"></p>
+                </div>
+                <span class="game-card__badge" data-role="player-badge"></span>
+              </div>
+
+              <form class="admin-form" data-role="player-form">
+                <label class="field">
+                  <span class="field__label">First name</span>
+                  <input class="field__input" type="text" data-role="first-name-input" required />
+                </label>
+
+                <label class="field">
+                  <span class="field__label">Last name</span>
+                  <input class="field__input" type="text" data-role="last-name-input" required />
+                </label>
+
+                <div class="admin-form__actions" data-role="player-actions"></div>
               </form>
             </article>
           </template>
