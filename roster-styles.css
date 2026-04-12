@@ -353,7 +353,34 @@ select.field__input option {
 }
 
 .admin-debug {
-  display: none;
+  margin-top: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admin-debug-toggle {
+  margin-top: 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-debug-toggle:hover,
+.admin-debug-toggle:focus-visible {
+  color: #ffe07a;
+  outline: none;
 }
 
 .admin-gate {

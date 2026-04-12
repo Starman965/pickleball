@@ -182,6 +182,7 @@ const playersCount = document.getElementById("players-count");
 const nextGame = document.getElementById("next-game");
 const adminStatus = document.getElementById("admin-status");
 const adminDebug = document.getElementById("admin-debug");
+const adminDebugToggle = document.getElementById("admin-debug-toggle");
 const adminGrid = document.getElementById("admin-grid");
 const adminGamesPager = document.getElementById("admin-games-pager");
 const adminGamesPrev = document.getElementById("admin-games-prev");
@@ -213,7 +214,9 @@ let playerAdminIndex = 0;
 let lastPlayersSignature = "";
 let adminUser = null;
 let isApprovedAdmin = false;
-let lastAuthEvent = "No Firebase auth event yet";
+let lastAuthFlowEvent = "No Firebase auth event yet";
+let lastAuthStateEvent = "Firebase auth state has not reported yet";
+let adminDebugVisible = false;
 
 adminSignIn.addEventListener("click", async () => {
   await beginAdminSignIn();
@@ -227,6 +230,11 @@ adminSignOut.addEventListener("click", async () => {
     console.error(error);
     setAdminStatus("Could not sign out right now.", "error");
   }
+});
+
+adminDebugToggle.addEventListener("click", () => {
+  adminDebugVisible = !adminDebugVisible;
+  refreshAdminDebugVisibility();
 });
 
 playerSelect.addEventListener("change", (event) => {
@@ -314,6 +322,11 @@ function setAdminDebug(message) {
   adminDebug.textContent = message;
 }
 
+function refreshAdminDebugVisibility() {
+  adminDebug.hidden = !adminDebugVisible;
+  adminDebugToggle.textContent = adminDebugVisible ? "Hide sign-in details" : "Show sign-in details";
+}
+
 function refreshAdminSessionUi() {
   adminUserEmail.textContent = adminUser?.email ?? "Not signed in";
   adminSignIn.hidden = Boolean(adminUser);
@@ -329,26 +342,37 @@ function refreshAdminSessionUi() {
 
   const currentUser = adminUser?.email ?? "none";
   const approval = adminUser ? (isApprovedAdmin ? "approved admin" : "not approved") : "signed out";
+  const signInMode = shouldPreferRedirectSignIn() ? "redirect (mobile)" : "popup (desktop)";
   setAdminDebug(
-    `Host: ${window.location.host || "unknown"} | Firebase auth domain: ${firebaseConfig.authDomain} | Current user: ${currentUser} | State: ${approval} | Last auth event: ${lastAuthEvent}`,
+    [
+      `Host: ${window.location.host || "unknown"}`,
+      `Sign-in mode: ${signInMode}`,
+      `Firebase auth domain: ${firebaseConfig.authDomain}`,
+      `Current user: ${currentUser}`,
+      `Approval: ${approval}`,
+      `Allowed admins: ${Array.from(APPROVED_ADMIN_EMAILS).join(", ")}`,
+      `Last auth flow event: ${lastAuthFlowEvent}`,
+      `Last auth state event: ${lastAuthStateEvent}`,
+    ].join("\n"),
   );
+  refreshAdminDebugVisibility();
 }
 
 async function beginAdminSignIn() {
   try {
     if (shouldPreferRedirectSignIn()) {
-      lastAuthEvent = "Using redirect sign-in flow";
+      lastAuthFlowEvent = "Using redirect sign-in flow";
       refreshAdminSessionUi();
       setAdminStatus("Opening Google sign-in...", "success");
       await signInWithRedirect(auth, googleProvider);
       return;
     }
 
-    lastAuthEvent = "Trying popup sign-in flow";
+    lastAuthFlowEvent = "Trying popup sign-in flow";
     refreshAdminSessionUi();
     setAdminStatus("Opening Google sign-in...", "success");
     const result = await signInWithPopup(auth, googleProvider);
-    lastAuthEvent = `Popup sign-in completed for ${result.user.email ?? "unknown email"}`;
+    lastAuthFlowEvent = `Popup sign-in completed for ${result.user.email ?? "unknown email"}`;
     refreshAdminSessionUi();
   } catch (error) {
     console.error(error);
@@ -362,21 +386,21 @@ async function beginAdminSignIn() {
 
     if (fallbackCodes.has(error.code)) {
       try {
-        lastAuthEvent = `Popup failed with ${error.code}; falling back to redirect`;
+        lastAuthFlowEvent = `Popup failed with ${error.code}; falling back to redirect`;
         refreshAdminSessionUi();
         setAdminStatus("Sign-in popup was blocked. Trying again another way...", "warning");
         await signInWithRedirect(auth, googleProvider);
         return;
       } catch (redirectError) {
         console.error(redirectError);
-        lastAuthEvent = `Redirect fallback failed with ${redirectError.code ?? "unknown error"}`;
+        lastAuthFlowEvent = `Redirect fallback failed with ${redirectError.code ?? "unknown error"}`;
         refreshAdminSessionUi();
         setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
         return;
       }
     }
 
-    lastAuthEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
+    lastAuthFlowEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
     refreshAdminSessionUi();
     setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
   }
@@ -1378,13 +1402,13 @@ async function initializeAdminAuth() {
     await setPersistence(auth, browserLocalPersistence);
     const redirectResult = await getRedirectResult(auth);
     if (redirectResult?.user) {
-      lastAuthEvent = `Redirect sign-in completed for ${redirectResult.user.email ?? "unknown email"}`;
+      lastAuthFlowEvent = `Redirect sign-in completed for ${redirectResult.user.email ?? "unknown email"}`;
     } else {
-      lastAuthEvent = "No redirect result was returned";
+      lastAuthFlowEvent = "No redirect result was returned";
     }
   } catch (error) {
     console.error(error);
-    lastAuthEvent = `Redirect sign-in failed with ${error.code ?? "unknown error"}`;
+    lastAuthFlowEvent = `Redirect sign-in failed with ${error.code ?? "unknown error"}`;
     refreshAdminSessionUi();
     setAdminStatus("Google sign-in is not ready yet. Check the Firebase sign-in setup.", "error");
   }
@@ -1392,7 +1416,7 @@ async function initializeAdminAuth() {
   onAuthStateChanged(auth, async (user) => {
     adminUser = user;
     isApprovedAdmin = userIsApprovedAdmin(user);
-    lastAuthEvent = user
+    lastAuthStateEvent = user
       ? `Firebase auth state is signed in as ${user.email ?? "unknown email"}`
       : "Firebase auth state is signed out";
     refreshAdminSessionUi();
