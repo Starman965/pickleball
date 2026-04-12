@@ -286,10 +286,32 @@ select.field__input option {
   display: none;
 }
 
-.games-grid {
-  display: grid;
-  gap: 1rem;
+.games-board {
   margin-top: 1rem;
+}
+
+.games-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.games-pager.is-hidden {
+  display: none;
+}
+
+.games-pager__label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  min-width: 7.5rem;
+  text-align: center;
+}
+
+.games-board__view {
+  display: block;
 }
 
 .games-grid__empty {
@@ -644,16 +666,6 @@ select.field__input option {
   }
 
   .players-admin-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .games-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1080px) {
-  .games-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

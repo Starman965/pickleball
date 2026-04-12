@@ -155,6 +155,10 @@ const playerSelect = document.getElementById("player-select");
 const selectedPlayerName = document.getElementById("selected-player-name");
 const statusBanner = document.getElementById("status-banner");
 const gamesGrid = document.getElementById("games-grid");
+const gamesPager = document.getElementById("games-pager");
+const gamesPrev = document.getElementById("games-prev");
+const gamesNext = document.getElementById("games-next");
+const gamesPagerLabel = document.getElementById("games-pager-label");
 const gamesCount = document.getElementById("games-count");
 const playersCount = document.getElementById("players-count");
 const nextGame = document.getElementById("next-game");
@@ -175,6 +179,8 @@ let selectedPlayerId = "";
 let players = [];
 let games = [];
 let savingState = false;
+let gameBoardIndex = 0;
+let lastGamesSignature = "";
 let adminUser = null;
 let isApprovedAdmin = false;
 let lastAuthEvent = "No Firebase auth event yet";
@@ -457,6 +463,145 @@ function buildSummary(game) {
   });
 
   return counts;
+}
+
+function getNextUpcomingFromSortedList(sortedList) {
+  if (!sortedList.length) {
+    return null;
+  }
+
+  const now = Date.now();
+
+  for (let i = 0; i < sortedList.length; i += 1) {
+    const parsed = Date.parse(sortedList[i].isoDate);
+    if (!Number.isNaN(parsed) && parsed >= now) {
+      return sortedList[i];
+    }
+  }
+
+  return sortedList[sortedList.length - 1];
+}
+
+function findNextUpcomingGameIndex() {
+  if (!games.length) {
+    return 0;
+  }
+
+  const now = Date.now();
+  const idx = games.findIndex((g) => {
+    const parsed = Date.parse(g.isoDate);
+    return !Number.isNaN(parsed) && parsed >= now;
+  });
+
+  if (idx === -1) {
+    return games.length - 1;
+  }
+
+  return idx;
+}
+
+function syncGameBoardIndex() {
+  const signature = games.map((g) => g.id).join("\n");
+
+  if (signature !== lastGamesSignature) {
+    lastGamesSignature = signature;
+    gameBoardIndex = findNextUpcomingGameIndex();
+    return;
+  }
+
+  if (!games.length) {
+    gameBoardIndex = 0;
+    return;
+  }
+
+  if (gameBoardIndex < 0 || gameBoardIndex >= games.length) {
+    gameBoardIndex = findNextUpcomingGameIndex();
+  }
+}
+
+function buildGameCardElement(game, activePlayers) {
+  const cardFragment = gameTemplate.content.cloneNode(true);
+  const card = cardFragment.querySelector(".game-card");
+  const dateNode = cardFragment.querySelector(".game-card__date");
+  const titleNode = cardFragment.querySelector(".game-card__title");
+  const metaNode = cardFragment.querySelector(".game-card__meta");
+  const inCountNode = cardFragment.querySelector('[data-role="in-count"]');
+  const outCountNode = cardFragment.querySelector('[data-role="out-count"]');
+  const pendingCountNode = cardFragment.querySelector('[data-role="pending-count"]');
+  const playerListNode = cardFragment.querySelector('[data-role="player-list"]');
+
+  const summary = buildSummary(game);
+
+  dateNode.textContent = game.dateLabel;
+  titleNode.textContent = game.opponent;
+  metaNode.textContent = `${game.timeLabel} • ${game.location}`;
+  inCountNode.textContent = String(summary.in);
+  outCountNode.textContent = String(summary.out);
+  pendingCountNode.textContent = String(summary.unknown);
+
+  activePlayers.forEach((player) => {
+    const rowFragment = playerTemplate.content.cloneNode(true);
+    const row = rowFragment.querySelector(".player-row");
+    const nameNode = rowFragment.querySelector(".player-row__name");
+    const badgeNode = rowFragment.querySelector(".player-row__badge");
+    const actionsNode = rowFragment.querySelector('[data-role="player-actions"]');
+    const status = getAttendanceStatus(game, player);
+    const meta = getStatusMeta(status);
+    const isSelected = selectedPlayerId && selectedPlayerId === player.id;
+
+    nameNode.textContent = player.fullName;
+    badgeNode.textContent = meta.label;
+    badgeNode.className = meta.className;
+
+    if (isSelected) {
+      row.classList.add("player-row--selected");
+      badgeNode.classList.add("status-badge--selected");
+    }
+
+    actionsNode.querySelectorAll("button").forEach((button) => {
+      const buttonStatus = button.dataset.status;
+
+      if (buttonStatus === status) {
+        button.classList.add("action-btn--active");
+      }
+
+      button.disabled = savingState;
+      button.addEventListener("click", async () => {
+        if (!selectedPlayerId) {
+          setStatus("Select your name first so you can update your attendance.", "warning");
+          return;
+        }
+
+        await updateAttendance(game.id, selectedPlayerId, buttonStatus);
+      });
+    });
+
+    if (!isSelected) {
+      actionsNode.remove();
+    }
+
+    playerListNode.append(rowFragment);
+  });
+
+  return card;
+}
+
+function updateGamesPager() {
+  if (!gamesPager || !gamesPagerLabel || !gamesPrev || !gamesNext) {
+    return;
+  }
+
+  const total = games.length;
+
+  if (total <= 1) {
+    gamesPager.classList.add("is-hidden");
+    return;
+  }
+
+  gamesPager.classList.remove("is-hidden");
+  gamesPagerLabel.textContent = `Game ${gameBoardIndex + 1} of ${total}`;
+  gamesPrev.disabled = gameBoardIndex <= 0 || savingState;
+  gamesNext.disabled = gameBoardIndex >= total - 1 || savingState;
 }
 
 async function seedPlayersIfNeeded() {
@@ -744,6 +889,7 @@ function renderGamesAdminControls() {
 }
 
 function renderGames() {
+  syncGameBoardIndex();
   gamesGrid.innerHTML = "";
 
   const activePlayers = getActivePlayers();
@@ -753,6 +899,7 @@ function renderGames() {
     empty.className = "games-grid__empty";
     empty.textContent = "No games available yet.";
     gamesGrid.append(empty);
+    updateGamesPager();
     return;
   }
 
@@ -761,75 +908,13 @@ function renderGames() {
     empty.className = "games-grid__empty";
     empty.textContent = "No active players are on the roster yet. An admin can add players in the roster manager.";
     gamesGrid.append(empty);
+    updateGamesPager();
     return;
   }
 
-  games.forEach((game) => {
-    const cardFragment = gameTemplate.content.cloneNode(true);
-    const card = cardFragment.querySelector(".game-card");
-    const dateNode = cardFragment.querySelector(".game-card__date");
-    const titleNode = cardFragment.querySelector(".game-card__title");
-    const metaNode = cardFragment.querySelector(".game-card__meta");
-    const inCountNode = cardFragment.querySelector('[data-role="in-count"]');
-    const outCountNode = cardFragment.querySelector('[data-role="out-count"]');
-    const pendingCountNode = cardFragment.querySelector('[data-role="pending-count"]');
-    const playerListNode = cardFragment.querySelector('[data-role="player-list"]');
-
-    const summary = buildSummary(game);
-
-    dateNode.textContent = game.dateLabel;
-    titleNode.textContent = game.opponent;
-    metaNode.textContent = `${game.timeLabel} • ${game.location}`;
-    inCountNode.textContent = String(summary.in);
-    outCountNode.textContent = String(summary.out);
-    pendingCountNode.textContent = String(summary.unknown);
-
-    activePlayers.forEach((player) => {
-      const rowFragment = playerTemplate.content.cloneNode(true);
-      const row = rowFragment.querySelector(".player-row");
-      const nameNode = rowFragment.querySelector(".player-row__name");
-      const badgeNode = rowFragment.querySelector(".player-row__badge");
-      const actionsNode = rowFragment.querySelector('[data-role="player-actions"]');
-      const status = getAttendanceStatus(game, player);
-      const meta = getStatusMeta(status);
-      const isSelected = selectedPlayerId && selectedPlayerId === player.id;
-
-      nameNode.textContent = player.fullName;
-      badgeNode.textContent = meta.label;
-      badgeNode.className = meta.className;
-
-      if (isSelected) {
-        row.classList.add("player-row--selected");
-        badgeNode.classList.add("status-badge--selected");
-      }
-
-      actionsNode.querySelectorAll("button").forEach((button) => {
-        const buttonStatus = button.dataset.status;
-
-        if (buttonStatus === status) {
-          button.classList.add("action-btn--active");
-        }
-
-        button.disabled = savingState;
-        button.addEventListener("click", async () => {
-          if (!selectedPlayerId) {
-            setStatus("Select your name first so you can update your attendance.", "warning");
-            return;
-          }
-
-          await updateAttendance(game.id, selectedPlayerId, buttonStatus);
-        });
-      });
-
-      if (!isSelected) {
-        actionsNode.remove();
-      }
-
-      playerListNode.append(rowFragment);
-    });
-
-    gamesGrid.append(card);
-  });
+  const game = games[gameBoardIndex];
+  gamesGrid.append(buildGameCardElement(game, activePlayers));
+  updateGamesPager();
 }
 
 async function updateAttendance(gameId, playerId, status) {
@@ -1167,7 +1252,11 @@ function bootstrapPlayersListener() {
 
 function bootstrapGamesListener() {
   gamesCount.textContent = String(MOCK_GAMES.length);
-  nextGame.textContent = `${MOCK_GAMES[0].dateLabel} • ${MOCK_GAMES[0].timeLabel}`;
+  const sortedMock = [...MOCK_GAMES].sort((a, b) => a.isoDate.localeCompare(b.isoDate));
+  const mockUpcoming = getNextUpcomingFromSortedList(sortedMock);
+  nextGame.textContent = mockUpcoming
+    ? `${mockUpcoming.dateLabel} • ${mockUpcoming.timeLabel}`
+    : "No games scheduled";
   setStatus("Connecting to Firebase and loading schedule...", "warning");
 
   onSnapshot(
@@ -1178,8 +1267,9 @@ function bootstrapGamesListener() {
         .sort((left, right) => left.isoDate.localeCompare(right.isoDate));
 
       gamesCount.textContent = String(games.length);
-      nextGame.textContent = games[0]
-        ? `${games[0].dateLabel} • ${games[0].timeLabel}`
+      const upcoming = getNextUpcomingFromSortedList(games);
+      nextGame.textContent = upcoming
+        ? `${upcoming.dateLabel} • ${upcoming.timeLabel}`
         : "No games scheduled";
       setStatus("Live attendance is connected. Pick your name to update your availability.", "success");
       renderGames();
@@ -1194,6 +1284,20 @@ function bootstrapGamesListener() {
     },
   );
 }
+
+gamesPrev.addEventListener("click", () => {
+  if (gameBoardIndex > 0) {
+    gameBoardIndex -= 1;
+    renderGames();
+  }
+});
+
+gamesNext.addEventListener("click", () => {
+  if (gameBoardIndex < games.length - 1) {
+    gameBoardIndex += 1;
+    renderGames();
+  }
+});
 
 renderPlayerSelect();
 renderGames();

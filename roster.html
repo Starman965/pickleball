@@ -96,7 +96,23 @@
             </div>
           </div>
 
-          <div id="games-grid" class="games-grid"></div>
+          <div class="games-board">
+            <div
+              id="games-pager"
+              class="games-pager is-hidden"
+              role="navigation"
+              aria-label="Browse scheduled games"
+            >
+              <button type="button" id="games-prev" class="games-pager__btn action-btn">
+                Previous
+              </button>
+              <span id="games-pager-label" class="games-pager__label"></span>
+              <button type="button" id="games-next" class="games-pager__btn action-btn">
+                Next
+              </button>
+            </div>
+            <div id="games-grid" class="games-board__view"></div>
+          </div>
         </section>
 
         <section class="panel panel--muted">
