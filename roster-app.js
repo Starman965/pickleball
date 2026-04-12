@@ -441,6 +441,26 @@ function readPacificClock(utcMs) {
   };
 }
 
+function pacificDateKeyFromUtcMs(utcMs) {
+  const z = readPacificClock(utcMs);
+
+  if (Number.isNaN(z.y) || Number.isNaN(z.mo) || Number.isNaN(z.d)) {
+    return "";
+  }
+
+  return `${String(z.y).padStart(4, "0")}-${String(z.mo).padStart(2, "0")}-${String(z.d).padStart(2, "0")}`;
+}
+
+function pacificDateKeyFromIso(isoDateStr) {
+  const ms = Date.parse(isoDateStr);
+
+  if (Number.isNaN(ms)) {
+    return "";
+  }
+
+  return pacificDateKeyFromUtcMs(ms);
+}
+
 function pacificWallTimeToUtcMs(dateValue, timeHHMM) {
   const [y, mo, d] = dateValue.split("-").map(Number);
   const [h, mi] = timeHHMM.split(":").map(Number);
@@ -587,11 +607,11 @@ function getNextUpcomingFromSortedList(sortedList) {
     return null;
   }
 
-  const now = Date.now();
+  const todayKey = pacificDateKeyFromUtcMs(Date.now());
 
   for (let i = 0; i < sortedList.length; i += 1) {
-    const parsed = Date.parse(sortedList[i].isoDate);
-    if (!Number.isNaN(parsed) && parsed >= now) {
+    const gameDateKey = pacificDateKeyFromIso(sortedList[i].isoDate);
+    if (gameDateKey && gameDateKey >= todayKey) {
       return sortedList[i];
     }
   }
@@ -604,10 +624,10 @@ function findNextUpcomingGameIndex() {
     return 0;
   }
 
-  const now = Date.now();
+  const todayKey = pacificDateKeyFromUtcMs(Date.now());
   const idx = games.findIndex((g) => {
-    const parsed = Date.parse(g.isoDate);
-    return !Number.isNaN(parsed) && parsed >= now;
+    const gameDateKey = pacificDateKeyFromIso(g.isoDate);
+    return gameDateKey && gameDateKey >= todayKey;
   });
 
   if (idx === -1) {
