@@ -321,6 +321,13 @@ h2 {
   border-color: rgba(34, 197, 94, 0.22);
 }
 
+.admin-debug {
+  margin-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
 .admin-gate {
   display: grid;
   gap: 0.75rem;

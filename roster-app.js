@@ -6,6 +6,7 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   setPersistence,
+  signInWithPopup,
   signInWithRedirect,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -158,6 +159,7 @@ const gamesCount = document.getElementById("games-count");
 const playersCount = document.getElementById("players-count");
 const nextGame = document.getElementById("next-game");
 const adminStatus = document.getElementById("admin-status");
+const adminDebug = document.getElementById("admin-debug");
 const adminGrid = document.getElementById("admin-grid");
 const playersAdminGrid = document.getElementById("players-admin-grid");
 const adminUserEmail = document.getElementById("admin-user-email");
@@ -175,15 +177,10 @@ let games = [];
 let savingState = false;
 let adminUser = null;
 let isApprovedAdmin = false;
+let lastAuthEvent = "No Firebase auth event yet";
 
 adminSignIn.addEventListener("click", async () => {
-  try {
-    setAdminStatus("Redirecting to Google sign-in...", "success");
-    await signInWithRedirect(auth, googleProvider);
-  } catch (error) {
-    console.error(error);
-    setAdminStatus("Google sign-in could not start. Verify Google Auth is enabled in Firebase.", "error");
-  }
+  await beginAdminSignIn();
 });
 
 adminSignOut.addEventListener("click", async () => {
@@ -209,6 +206,10 @@ function normalizeEmail(email) {
 
 function userIsApprovedAdmin(user) {
   return APPROVED_ADMIN_EMAILS.has(normalizeEmail(user?.email));
+}
+
+function shouldPreferRedirectSignIn() {
+  return /iphone|ipad|ipod|android/i.test(window.navigator.userAgent);
 }
 
 function buildFullName(firstName, lastName) {
@@ -267,6 +268,10 @@ function setAdminStatus(message, tone = "") {
   }
 }
 
+function setAdminDebug(message) {
+  adminDebug.textContent = message;
+}
+
 function refreshAdminSessionUi() {
   adminUserEmail.textContent = adminUser?.email ?? "Not signed in";
   adminSignIn.hidden = Boolean(adminUser);
@@ -278,6 +283,60 @@ function refreshAdminSessionUi() {
     adminHelperText.textContent = "This Google account is signed in, but it is not on the approved admin list.";
   } else {
     adminHelperText.textContent = "Sign in with an approved Google account to manage the roster and schedule.";
+  }
+
+  const currentUser = adminUser?.email ?? "none";
+  const approval = adminUser ? (isApprovedAdmin ? "approved admin" : "not approved") : "signed out";
+  setAdminDebug(
+    `Host: ${window.location.host || "unknown"} | Firebase auth domain: ${firebaseConfig.authDomain} | Current user: ${currentUser} | State: ${approval} | Last auth event: ${lastAuthEvent}`,
+  );
+}
+
+async function beginAdminSignIn() {
+  try {
+    if (shouldPreferRedirectSignIn()) {
+      lastAuthEvent = "Using redirect sign-in flow";
+      refreshAdminSessionUi();
+      setAdminStatus("Redirecting to Google sign-in...", "success");
+      await signInWithRedirect(auth, googleProvider);
+      return;
+    }
+
+    lastAuthEvent = "Trying popup sign-in flow";
+    refreshAdminSessionUi();
+    setAdminStatus("Opening Google sign-in...", "success");
+    const result = await signInWithPopup(auth, googleProvider);
+    lastAuthEvent = `Popup sign-in completed for ${result.user.email ?? "unknown email"}`;
+    refreshAdminSessionUi();
+  } catch (error) {
+    console.error(error);
+
+    const fallbackCodes = new Set([
+      "auth/popup-blocked",
+      "auth/popup-closed-by-user",
+      "auth/cancelled-popup-request",
+      "auth/operation-not-supported-in-this-environment",
+    ]);
+
+    if (fallbackCodes.has(error.code)) {
+      try {
+        lastAuthEvent = `Popup failed with ${error.code}; falling back to redirect`;
+        refreshAdminSessionUi();
+        setAdminStatus("Popup sign-in was blocked. Falling back to redirect...", "warning");
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      } catch (redirectError) {
+        console.error(redirectError);
+        lastAuthEvent = `Redirect fallback failed with ${redirectError.code ?? "unknown error"}`;
+        refreshAdminSessionUi();
+        setAdminStatus("Google sign-in could not start. Verify Google Auth and authorized domains.", "error");
+        return;
+      }
+    }
+
+    lastAuthEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
+    refreshAdminSessionUi();
+    setAdminStatus("Google sign-in could not start. Verify Google Auth and authorized domains.", "error");
   }
 }
 
@@ -1033,15 +1092,25 @@ async function setPlayerActiveState(playerId, active, fullName) {
 async function initializeAdminAuth() {
   try {
     await setPersistence(auth, browserLocalPersistence);
-    await getRedirectResult(auth);
+    const redirectResult = await getRedirectResult(auth);
+    if (redirectResult?.user) {
+      lastAuthEvent = `Redirect sign-in completed for ${redirectResult.user.email ?? "unknown email"}`;
+    } else {
+      lastAuthEvent = "No redirect result was returned";
+    }
   } catch (error) {
     console.error(error);
+    lastAuthEvent = `Redirect sign-in failed with ${error.code ?? "unknown error"}`;
+    refreshAdminSessionUi();
     setAdminStatus("Google sign-in is not ready. Enable Google Auth and add your site domain in Firebase.", "error");
   }
 
   onAuthStateChanged(auth, async (user) => {
     adminUser = user;
     isApprovedAdmin = userIsApprovedAdmin(user);
+    lastAuthEvent = user
+      ? `Firebase auth state is signed in as ${user.email ?? "unknown email"}`
+      : "Firebase auth state is signed out";
     refreshAdminSessionUi();
 
     if (isApprovedAdmin) {
