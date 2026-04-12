@@ -204,6 +204,7 @@ h2 {
 .field {
   display: grid;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .field__label {
@@ -234,6 +235,11 @@ input.field__input[type="date"],
 input.field__input[type="time"] {
   display: block;
   inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 select.field__input option {
