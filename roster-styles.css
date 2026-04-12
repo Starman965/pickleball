@@ -389,6 +389,14 @@ select.field__input option {
   margin-top: 1rem;
 }
 
+.players-admin-board {
+  margin-top: 1rem;
+}
+
+.players-admin-board .players-admin-grid {
+  margin-top: 0;
+}
+
 .admin-card {
   padding: 1rem;
   border-radius: var(--radius-lg);

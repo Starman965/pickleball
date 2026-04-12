@@ -156,7 +156,34 @@
               </div>
             </div>
 
-            <div class="players-admin-grid" id="players-admin-grid"></div>
+            <div class="players-admin-board">
+              <div
+                id="players-admin-pager"
+                class="games-pager is-hidden"
+                role="navigation"
+                aria-label="Browse players"
+              >
+                <button
+                  type="button"
+                  id="players-admin-prev"
+                  class="games-pager__btn action-btn"
+                >
+                  Previous
+                </button>
+                <span
+                  id="players-admin-pager-label"
+                  class="games-pager__label"
+                ></span>
+                <button
+                  type="button"
+                  id="players-admin-next"
+                  class="games-pager__btn action-btn"
+                >
+                  Next
+                </button>
+              </div>
+              <div class="players-admin-grid" id="players-admin-grid"></div>
+            </div>
           </div>
 
           <div class="admin-subsection">
@@ -184,6 +211,11 @@
                 <label class="field">
                   <span class="field__label">Game date</span>
                   <input class="field__input" type="date" data-role="date-input" required />
+                </label>
+
+                <label class="field">
+                  <span class="field__label">Start time (Pacific)</span>
+                  <input class="field__input" type="time" data-role="time-input" required />
                 </label>
 
                 <label class="field">

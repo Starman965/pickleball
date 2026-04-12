@@ -61,6 +61,24 @@ const PT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Los_Angeles",
 });
 
+const PT_TIME_LABEL_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/Los_Angeles",
+});
+
+const PACIFIC_TZ = "America/Los_Angeles";
+
+const PACIFIC_CLOCK_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: PACIFIC_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
 const MOCK_GAMES = [
   {
     id: "2026-04-18-canyon-club",
@@ -166,6 +184,10 @@ const adminStatus = document.getElementById("admin-status");
 const adminDebug = document.getElementById("admin-debug");
 const adminGrid = document.getElementById("admin-grid");
 const playersAdminGrid = document.getElementById("players-admin-grid");
+const playersAdminPager = document.getElementById("players-admin-pager");
+const playersAdminPrev = document.getElementById("players-admin-prev");
+const playersAdminNext = document.getElementById("players-admin-next");
+const playersAdminPagerLabel = document.getElementById("players-admin-pager-label");
 const adminUserEmail = document.getElementById("admin-user-email");
 const adminHelperText = document.getElementById("admin-helper-text");
 const adminSignIn = document.getElementById("admin-sign-in");
@@ -181,6 +203,8 @@ let games = [];
 let savingState = false;
 let gameBoardIndex = 0;
 let lastGamesSignature = "";
+let playerAdminIndex = 0;
+let lastPlayersSignature = "";
 let adminUser = null;
 let isApprovedAdmin = false;
 let lastAuthEvent = "No Firebase auth event yet";
@@ -359,14 +383,83 @@ function createDefaultAttendance(playerList = getActivePlayers()) {
   }, {});
 }
 
-function buildScheduleFields(dateValue) {
-  const isoDate = `${dateValue}T10:00:00-07:00`;
-  const dateLabel = PT_DATE_FORMATTER.format(new Date(isoDate));
+function normalizeTimeHHMM(value) {
+  if (!value || typeof value !== "string") {
+    return "10:00";
+  }
+
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+
+  if (!match) {
+    return "10:00";
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return "10:00";
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function readPacificClock(utcMs) {
+  const parts = PACIFIC_CLOCK_FORMATTER.formatToParts(new Date(utcMs));
+  const pick = (type) => Number(parts.find((p) => p.type === type)?.value ?? NaN);
+
+  return {
+    y: pick("year"),
+    mo: pick("month"),
+    d: pick("day"),
+    h: pick("hour"),
+    m: pick("minute"),
+  };
+}
+
+function pacificWallTimeToUtcMs(dateValue, timeHHMM) {
+  const [y, mo, d] = dateValue.split("-").map(Number);
+  const [h, mi] = timeHHMM.split(":").map(Number);
+  const dayStart = Date.UTC(y, mo - 1, d, 0, 0, 0);
+
+  for (let ms = dayStart - 12 * 3600 * 1000; ms < dayStart + 36 * 3600 * 1000; ms += 60 * 1000) {
+    const z = readPacificClock(ms);
+
+    if (z.y === y && z.mo === mo && z.d === d && z.h === h && z.m === mi) {
+      return ms;
+    }
+  }
+
+  return dayStart;
+}
+
+function pacificTimeInputValueFromIso(isoDateStr) {
+  const ms = Date.parse(isoDateStr);
+
+  if (Number.isNaN(ms)) {
+    return "10:00";
+  }
+
+  const z = readPacificClock(ms);
+  if (Number.isNaN(z.h) || Number.isNaN(z.m)) {
+    return "10:00";
+  }
+
+  return `${String(z.h).padStart(2, "0")}:${String(z.m).padStart(2, "0")}`;
+}
+
+function buildScheduleFields(dateValue, timeHHMM = "10:00") {
+  const time = normalizeTimeHHMM(timeHHMM);
+  const utcMs = pacificWallTimeToUtcMs(dateValue, time);
+  const instant = new Date(utcMs);
+  const isoDate = instant.toISOString();
+  const dateLabel = PT_DATE_FORMATTER.format(instant);
+  const timeLabel = `${PT_TIME_LABEL_FORMATTER.format(instant)} PT`;
 
   return {
     isoDate,
     dateLabel,
-    timeLabel: "10:00 AM PT",
+    timeLabel,
   };
 }
 
@@ -657,13 +750,15 @@ function buildAdminGameCard(game, options = {}) {
   const form = fragment.querySelector('[data-role="admin-form"]');
   const actions = fragment.querySelector('[data-role="admin-actions"]');
   const dateInput = fragment.querySelector('[data-role="date-input"]');
+  const timeInput = fragment.querySelector('[data-role="time-input"]');
   const locationInput = fragment.querySelector('[data-role="location-input"]');
   const opponentInput = fragment.querySelector('[data-role="opponent-input"]');
 
   title.textContent = options.title ?? game.opponent;
   meta.textContent = options.meta ?? `${game.dateLabel} • ${game.location}`;
   badge.textContent = game.timeLabel;
-  dateInput.value = game.isoDate.slice(0, 10);
+  dateInput.value = game.isoDate ? game.isoDate.slice(0, 10) : "";
+  timeInput.value = pacificTimeInputValueFromIso(game.isoDate);
   locationInput.value = game.location;
   opponentInput.value = game.opponent;
 
@@ -672,6 +767,7 @@ function buildAdminGameCard(game, options = {}) {
     form,
     actions,
     dateInput,
+    timeInput,
     locationInput,
     opponentInput,
   };
@@ -703,10 +799,89 @@ function buildAdminPlayerCard(player, options = {}) {
   };
 }
 
+function syncPlayerAdminIndex() {
+  const signature = players.map((player) => player.id).join("\n");
+
+  if (signature !== lastPlayersSignature) {
+    lastPlayersSignature = signature;
+    playerAdminIndex = 0;
+    return;
+  }
+
+  if (!players.length) {
+    playerAdminIndex = 0;
+    return;
+  }
+
+  if (playerAdminIndex < 0 || playerAdminIndex >= players.length) {
+    playerAdminIndex = 0;
+  }
+}
+
+function updatePlayersAdminPager() {
+  if (!playersAdminPager || !playersAdminPagerLabel || !playersAdminPrev || !playersAdminNext) {
+    return;
+  }
+
+  const total = players.length;
+
+  if (total <= 1 || !isApprovedAdmin) {
+    playersAdminPager.classList.add("is-hidden");
+    return;
+  }
+
+  playersAdminPager.classList.remove("is-hidden");
+  playersAdminPagerLabel.textContent = `Player ${playerAdminIndex + 1} of ${total}`;
+  playersAdminPrev.disabled = playerAdminIndex <= 0 || savingState;
+  playersAdminNext.disabled = playerAdminIndex >= total - 1 || savingState;
+}
+
+function buildExistingPlayerAdminCard(player) {
+  const adminCard = buildAdminPlayerCard(player);
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "action-btn";
+  resetButton.textContent = "Reset";
+  resetButton.disabled = savingState;
+  resetButton.addEventListener("click", () => {
+    adminCard.firstNameInput.value = player.firstName;
+    adminCard.lastNameInput.value = player.lastName;
+  });
+
+  const saveButton = document.createElement("button");
+  saveButton.type = "submit";
+  saveButton.className = "action-btn action-btn--active";
+  saveButton.textContent = "Save";
+  saveButton.disabled = savingState;
+
+  const activeToggleButton = document.createElement("button");
+  activeToggleButton.type = "button";
+  activeToggleButton.className = player.active ? "action-btn action-btn--danger" : "action-btn";
+  activeToggleButton.textContent = player.active ? "Deactivate" : "Reactivate";
+  activeToggleButton.disabled = savingState;
+  activeToggleButton.addEventListener("click", async () => {
+    await setPlayerActiveState(player.id, !player.active, player.fullName);
+  });
+
+  adminCard.actions.append(resetButton, saveButton, activeToggleButton);
+  adminCard.form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await updatePlayer(player, {
+      firstName: adminCard.firstNameInput.value,
+      lastName: adminCard.lastNameInput.value,
+    });
+  });
+
+  return adminCard.card;
+}
+
 function renderPlayersAdminControls() {
+  syncPlayerAdminIndex();
   playersAdminGrid.innerHTML = "";
 
   if (!isApprovedAdmin) {
+    updatePlayersAdminPager();
     return;
   }
 
@@ -747,48 +922,13 @@ function renderPlayersAdminControls() {
     empty.className = "games-grid__empty";
     empty.textContent = "No players are loaded yet. Use the card above to create the first player.";
     playersAdminGrid.append(empty);
+    updatePlayersAdminPager();
     return;
   }
 
-  players.forEach((player) => {
-    const adminCard = buildAdminPlayerCard(player);
-
-    const resetButton = document.createElement("button");
-    resetButton.type = "button";
-    resetButton.className = "action-btn";
-    resetButton.textContent = "Reset";
-    resetButton.disabled = savingState;
-    resetButton.addEventListener("click", () => {
-      adminCard.firstNameInput.value = player.firstName;
-      adminCard.lastNameInput.value = player.lastName;
-    });
-
-    const saveButton = document.createElement("button");
-    saveButton.type = "submit";
-    saveButton.className = "action-btn action-btn--active";
-    saveButton.textContent = "Save";
-    saveButton.disabled = savingState;
-
-    const activeToggleButton = document.createElement("button");
-    activeToggleButton.type = "button";
-    activeToggleButton.className = player.active ? "action-btn action-btn--danger" : "action-btn";
-    activeToggleButton.textContent = player.active ? "Deactivate" : "Reactivate";
-    activeToggleButton.disabled = savingState;
-    activeToggleButton.addEventListener("click", async () => {
-      await setPlayerActiveState(player.id, !player.active, player.fullName);
-    });
-
-    adminCard.actions.append(resetButton, saveButton, activeToggleButton);
-    adminCard.form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      await updatePlayer(player, {
-        firstName: adminCard.firstNameInput.value,
-        lastName: adminCard.lastNameInput.value,
-      });
-    });
-
-    playersAdminGrid.append(adminCard.card);
-  });
+  const player = players[playerAdminIndex];
+  playersAdminGrid.append(buildExistingPlayerAdminCard(player));
+  updatePlayersAdminPager();
 }
 
 function renderGamesAdminControls() {
@@ -825,6 +965,7 @@ function renderGamesAdminControls() {
     event.preventDefault();
     await createGame({
       scheduledDate: createCard.dateInput.value,
+      scheduledTime: createCard.timeInput.value,
       location: createCard.locationInput.value.trim(),
       opponent: createCard.opponentInput.value.trim(),
     });
@@ -850,6 +991,7 @@ function renderGamesAdminControls() {
     resetButton.disabled = savingState;
     resetButton.addEventListener("click", () => {
       adminCard.dateInput.value = game.isoDate.slice(0, 10);
+      adminCard.timeInput.value = pacificTimeInputValueFromIso(game.isoDate);
       adminCard.locationInput.value = game.location;
       adminCard.opponentInput.value = game.opponent;
     });
@@ -879,6 +1021,7 @@ function renderGamesAdminControls() {
       event.preventDefault();
       await updateGameDetails(game.id, {
         scheduledDate: adminCard.dateInput.value,
+        scheduledTime: adminCard.timeInput.value,
         location: adminCard.locationInput.value.trim(),
         opponent: adminCard.opponentInput.value.trim(),
       });
@@ -955,8 +1098,8 @@ async function updateGameDetails(gameId, updates) {
     return;
   }
 
-  if (!updates.scheduledDate || !updates.location || !updates.opponent) {
-    setAdminStatus("Date, location, and match label are required.", "error");
+  if (!updates.scheduledDate || !updates.scheduledTime || !updates.location || !updates.opponent) {
+    setAdminStatus("Date, time, location, and match label are required.", "error");
     return;
   }
 
@@ -968,7 +1111,7 @@ async function updateGameDetails(gameId, updates) {
 
   try {
     await updateDoc(doc(db, "games", gameId), {
-      ...buildScheduleFields(updates.scheduledDate),
+      ...buildScheduleFields(updates.scheduledDate, updates.scheduledTime),
       location: updates.location,
       opponent: updates.opponent,
       updatedAt: serverTimestamp(),
@@ -992,8 +1135,8 @@ async function createGame(updates) {
     return;
   }
 
-  if (!updates.scheduledDate || !updates.location || !updates.opponent) {
-    setAdminStatus("Date, location, and match label are required to create a game.", "error");
+  if (!updates.scheduledDate || !updates.scheduledTime || !updates.location || !updates.opponent) {
+    setAdminStatus("Date, time, location, and match label are required to create a game.", "error");
     return;
   }
 
@@ -1008,7 +1151,7 @@ async function createGame(updates) {
   try {
     await setDoc(doc(db, "games", gameId), {
       id: gameId,
-      ...buildScheduleFields(updates.scheduledDate),
+      ...buildScheduleFields(updates.scheduledDate, updates.scheduledTime),
       location: updates.location,
       opponent: updates.opponent,
       attendance: createDefaultAttendance(),
@@ -1296,6 +1439,20 @@ gamesNext.addEventListener("click", () => {
   if (gameBoardIndex < games.length - 1) {
     gameBoardIndex += 1;
     renderGames();
+  }
+});
+
+playersAdminPrev.addEventListener("click", () => {
+  if (playerAdminIndex > 0) {
+    playerAdminIndex -= 1;
+    renderPlayersAdminControls();
+  }
+});
+
+playersAdminNext.addEventListener("click", () => {
+  if (playerAdminIndex < players.length - 1) {
+    playerAdminIndex += 1;
+    renderPlayersAdminControls();
   }
 });
 
