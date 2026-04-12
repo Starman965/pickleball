@@ -217,6 +217,8 @@ h2 {
 
 .field__input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 3.25rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--line);
@@ -229,6 +231,12 @@ h2 {
 .field__input:focus {
   border-color: rgba(255, 200, 61, 0.7);
   box-shadow: 0 0 0 3px rgba(255, 200, 61, 0.12);
+}
+
+input.field__input[type="date"],
+input.field__input[type="time"] {
+  display: block;
+  inline-size: 100%;
 }
 
 select.field__input option {
