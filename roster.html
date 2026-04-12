@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Hawk'n'Roll Pickleball Attendance</title>
+    <meta
+      name="description"
+      content="Track upcoming Hawk'n'Roll pickleball games and mark attendance live from your phone."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./roster-styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero__content">
+          <p class="eyebrow">Blackhawk Country Club</p>
+          <h1>Hawk'n'Roll Pickleball Attendance</h1>
+          <p class="hero__copy">
+            Check upcoming match dates, see who is in, and update your own
+            availability in seconds.
+          </p>
+
+          <div class="hero__stats" id="hero-stats">
+            <article class="stat-card">
+              <span class="stat-card__label">Upcoming games</span>
+              <strong class="stat-card__value" id="games-count">0</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Roster size</span>
+              <strong class="stat-card__value" id="players-count">15</strong>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card__label">Next game</span>
+              <strong class="stat-card__value stat-card__value--small" id="next-game"
+                >Add dates in roster-app.js</strong
+              >
+            </article>
+          </div>
+        </div>
+
+        <div class="hero__brand">
+          <div class="hero__logo-wrap">
+            <img
+              class="hero__logo"
+              src="./logo.jpg"
+              alt="Hawk'n'Roll pickleball team logo"
+            />
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="panel panel--accent">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Your status</p>
+              <h2>Choose your name</h2>
+            </div>
+            <span class="live-pill">Live with Firebase</span>
+          </div>
+
+          <div class="selector-row">
+            <label class="field">
+              <span class="field__label">Player</span>
+              <select id="player-select" class="field__input">
+                <option value="">Select your name</option>
+              </select>
+            </label>
+
+            <div class="selection-summary">
+              <span class="selection-summary__label">Selected player</span>
+              <strong id="selected-player-name">None selected</strong>
+              <p>Only your row shows update buttons, keeping the mobile UI clean.</p>
+            </div>
+          </div>
+
+          <div class="status-banner" id="status-banner" aria-live="polite">
+            Loading games from Firebase...
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Upcoming dates</p>
+              <h2>Game availability board</h2>
+            </div>
+          </div>
+
+          <div id="games-grid" class="games-grid"></div>
+        </section>
+
+        <section class="panel panel--muted">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Admin tools</p>
+              <h2>Edit game schedule</h2>
+            </div>
+          </div>
+
+          <div class="admin-note">
+            Only approved admins can sign in with Google to update game dates,
+            locations, and match labels. Players do not need an account.
+          </div>
+
+          <div class="admin-auth">
+            <div class="selection-summary">
+              <span class="selection-summary__label">Admin account</span>
+              <strong id="admin-user-email">Not signed in</strong>
+              <p id="admin-helper-text">
+                Sign in with an approved Google account to manage the schedule.
+              </p>
+            </div>
+
+            <div class="admin-auth__actions">
+              <button type="button" class="action-btn action-btn--admin" id="admin-sign-in">
+                Sign in with Google
+              </button>
+              <button type="button" class="action-btn" id="admin-sign-out" hidden>
+                Sign out
+              </button>
+            </div>
+          </div>
+
+          <div class="admin-status" id="admin-status">
+            Admin tools are locked.
+          </div>
+
+          <div class="admin-grid" id="admin-grid"></div>
+
+          <template id="admin-card-template">
+            <article class="admin-card">
+              <div class="admin-card__header">
+                <div>
+                  <h3 data-role="admin-title"></h3>
+                  <p class="admin-card__meta" data-role="admin-meta"></p>
+                </div>
+                <span class="game-card__badge" data-role="admin-badge"></span>
+              </div>
+
+              <form class="admin-form" data-role="admin-form">
+                <label class="field">
+                  <span class="field__label">Game date</span>
+                  <input class="field__input" type="date" data-role="date-input" required />
+                </label>
+
+                <label class="field">
+                  <span class="field__label">Location</span>
+                  <input class="field__input" type="text" data-role="location-input" required />
+                </label>
+
+                <label class="field">
+                  <span class="field__label">Match label</span>
+                  <input class="field__input" type="text" data-role="opponent-input" required />
+                </label>
+
+                <div class="admin-form__actions" data-role="admin-actions"></div>
+              </form>
+            </article>
+          </template>
+        </section>
+
+        <section class="panel panel--muted">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Roster reference</p>
+              <h2>Team list</h2>
+            </div>
+          </div>
+
+          <details class="roster-reference">
+            <summary>Open roster image</summary>
+            <img src="./roster.jpg" alt="Hawk'n'Roll roster reference" />
+          </details>
+        </section>
+      </main>
+    </div>
+
+    <template id="game-card-template">
+      <article class="game-card">
+        <div class="game-card__top">
+          <div>
+            <p class="game-card__date"></p>
+            <h3 class="game-card__title"></h3>
+            <p class="game-card__meta"></p>
+          </div>
+          <span class="game-card__badge">Upcoming</span>
+        </div>
+
+        <div class="game-card__summary">
+          <div class="summary-chip summary-chip--in">
+            <span>In</span>
+            <strong data-role="in-count">0</strong>
+          </div>
+          <div class="summary-chip summary-chip--out">
+            <span>Out</span>
+            <strong data-role="out-count">0</strong>
+          </div>
+          <div class="summary-chip">
+            <span>No response</span>
+            <strong data-role="pending-count">0</strong>
+          </div>
+        </div>
+
+        <div class="player-list" data-role="player-list"></div>
+      </article>
+    </template>
+
+    <template id="player-row-template">
+      <div class="player-row">
+        <div class="player-row__identity">
+          <strong class="player-row__name"></strong>
+          <span class="player-row__badge status-badge">No response</span>
+        </div>
+
+        <div class="player-row__actions" data-role="player-actions">
+          <button type="button" class="action-btn action-btn--in" data-status="in">
+            In
+          </button>
+          <button type="button" class="action-btn action-btn--out" data-status="out">
+            Out
+          </button>
+          <button type="button" class="action-btn" data-status="unknown">
+            Clear
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <script type="module" src="./roster-app.js"></script>
+  </body>
+</html>
