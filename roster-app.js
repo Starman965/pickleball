@@ -800,7 +800,12 @@ function buildAdminGameCard(game, options = {}) {
 
   title.textContent = options.title ?? game.opponent;
   meta.textContent = options.meta ?? `${game.dateLabel} • ${game.location}`;
-  badge.textContent = game.timeLabel;
+  if (options.hideBadge) {
+    badge.hidden = true;
+  } else {
+    badge.hidden = false;
+    badge.textContent = game.timeLabel;
+  }
   dateInput.value = game.isoDate ? game.isoDate.slice(0, 10) : "";
   timeInput.value = pacificTimeInputValueFromIso(game.isoDate);
   locationInput.value = game.location;
@@ -1081,6 +1086,7 @@ function renderGamesAdminControls() {
     {
       title: "Create new game",
       meta: "Add a new game date to the live schedule.",
+      hideBadge: true,
     },
   );
 
