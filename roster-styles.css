@@ -247,6 +247,10 @@ select.field__input option {
   background: #f7f9fc;
 }
 
+select.field__input {
+  min-height: 3.5rem;
+}
+
 .selection-summary {
   padding: 1rem;
   border-radius: var(--radius-md);

@@ -335,9 +335,9 @@ function refreshAdminSessionUi() {
   if (isApprovedAdmin) {
     adminHelperText.textContent = "You can update players, dates, and locations from here.";
   } else if (adminUser) {
-    adminHelperText.textContent = "This account is signed in, but it does not have access to make changes.";
+    adminHelperText.textContent = "This account is signed in, but it is not an approved admin account.";
   } else {
-    adminHelperText.textContent = "Sign in to update the roster and schedule.";
+    adminHelperText.textContent = "Sign in with an approved admin account to manage players and games.";
   }
 
   const currentUser = adminUser?.email ?? "none";
@@ -730,7 +730,7 @@ function updateGamesPager() {
 
   const total = games.length;
 
-  if (total <= 1) {
+  if (total <= 1 || !selectedPlayerId) {
     gamesPager.classList.add("is-hidden");
     return;
   }
@@ -1149,6 +1149,15 @@ function renderGames() {
     return;
   }
 
+  if (!selectedPlayerId) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "Select your name above to view the game board and update your availability.";
+    gamesGrid.append(empty);
+    updateGamesPager();
+    return;
+  }
+
   const game = games[gameBoardIndex];
   gamesGrid.append(buildGameCardElement(game, activePlayers));
   updateGamesPager();
@@ -1451,7 +1460,7 @@ async function initializeAdminAuth() {
         setAdminStatus("Signed in, but some team data could not be loaded.", "error");
       }
     } else if (user) {
-      setAdminStatus(`${user.email} is signed in, but this account cannot make changes.`, "error");
+      setAdminStatus(`${user.email} is signed in, but it is not an approved admin account.`, "error");
     } else {
       setAdminStatus("Sign in to make changes.", "");
     }
