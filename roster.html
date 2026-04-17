@@ -44,6 +44,9 @@
         </div>
 
         <nav class="side-nav__menu">
+          <button type="button" class="nav-link" data-view-target="members">
+            The Team
+          </button>
           <button type="button" class="nav-link is-active" data-view-target="schedule">
             Schedule
           </button>
@@ -51,7 +54,7 @@
             Availability
           </button>
           <button type="button" class="nav-link" data-view-target="roster">
-            Roster
+            Game Rosters
           </button>
           <button type="button" class="nav-link" data-view-target="team">
             Team Standing
@@ -145,6 +148,20 @@
               Sign in to make changes.
             </div>
 
+            <section class="panel view-section" id="view-members" hidden>
+              <div class="panel__header">
+                <div>
+                  <p class="panel__eyebrow">Current roster</p>
+                  <h2>The Team</h2>
+                </div>
+                <p class="panel__copy">
+                  Meet the Hawk'n'Roll players who make up the team this season.
+                </p>
+              </div>
+
+              <div class="cards-grid cards-grid--compact" id="members-grid"></div>
+            </section>
+
             <section class="panel view-section" id="view-schedule">
               <div class="panel__header">
                 <div>
@@ -200,7 +217,7 @@
               <div class="panel__header">
                 <div>
                   <p class="panel__eyebrow" id="roster-view-eyebrow">Captain view</p>
-                  <h2>Roster</h2>
+                  <h2>Game Rosters</h2>
                 </div>
                 <p class="panel__copy" id="roster-view-copy">
                   Choose which active players are in for each matchup. Phase 1 uses the current admin login for roster edits.

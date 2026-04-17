@@ -516,24 +516,15 @@
 
     <script>
       (function loadFreshAssets() {
-        const appVersion = "2026-04-17-1";
-        const currentUrl = new URL(window.location.href);
-        const currentVersion = currentUrl.searchParams.get("v");
-
-        if (currentVersion !== appVersion) {
-          currentUrl.searchParams.set("v", appVersion);
-          window.location.replace(currentUrl.toString());
-          return;
-        }
-
+        const cacheBust = Date.now();
         const stylesheet = document.createElement("link");
         stylesheet.rel = "stylesheet";
-        stylesheet.href = `./roster-styles.css?v=${appVersion}`;
+        stylesheet.href = `./roster-styles.css?v=${cacheBust}`;
         document.head.appendChild(stylesheet);
 
         const appScript = document.createElement("script");
         appScript.type = "module";
-        appScript.src = `./roster-app.js?v=${appVersion}`;
+        appScript.src = `./roster-app.js?v=${cacheBust}`;
         document.body.appendChild(appScript);
       })();
     </script>
