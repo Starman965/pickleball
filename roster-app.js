@@ -1260,6 +1260,10 @@ function renderTeamStandingView() {
 }
 
 function renderMembersView() {
+  if (!membersGrid) {
+    return;
+  }
+
   membersGrid.innerHTML = "";
 
   if (!players.length) {
