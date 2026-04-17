@@ -6,6 +6,7 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   setPersistence,
+  signInWithPopup,
   signInWithRedirect,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -1645,13 +1646,39 @@ function buildGamePersistencePayload(updates) {
 
 async function beginAdminSignIn() {
   try {
-    lastAuthFlowEvent = "Starting redirect sign-in flow";
+    lastAuthFlowEvent = "Trying popup sign-in flow";
     refreshAdminSessionUi();
-    setAdminStatus("Redirecting to Google sign-in...", "warning");
-    await signInWithRedirect(auth, googleProvider);
+    setAdminStatus("Opening Google sign-in...", "warning");
+    const result = await signInWithPopup(auth, googleProvider);
+    lastAuthFlowEvent = `Popup sign-in completed for ${result.user.email ?? "unknown email"}`;
+    refreshAdminSessionUi();
   } catch (error) {
     console.error(error);
-    lastAuthFlowEvent = `Redirect sign-in failed with ${error.code ?? "unknown error"}`;
+
+    const fallbackCodes = new Set([
+      "auth/popup-blocked",
+      "auth/popup-closed-by-user",
+      "auth/cancelled-popup-request",
+      "auth/operation-not-supported-in-this-environment",
+    ]);
+
+    if (fallbackCodes.has(error.code)) {
+      try {
+        lastAuthFlowEvent = `Popup failed with ${error.code}; falling back to redirect`;
+        refreshAdminSessionUi();
+        setAdminStatus("Sign-in popup was blocked. Trying redirect sign-in...", "warning");
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      } catch (redirectError) {
+        console.error(redirectError);
+        lastAuthFlowEvent = `Redirect fallback failed with ${redirectError.code ?? "unknown error"}`;
+        refreshAdminSessionUi();
+        setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
+        return;
+      }
+    }
+
+    lastAuthFlowEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
     refreshAdminSessionUi();
     setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
   }
