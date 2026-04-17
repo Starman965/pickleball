@@ -6,10 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title>Hawk'n'Roll Pickleball Attendance</title>
+    <title>Hawk'n'Roll Team Management</title>
     <meta
       name="description"
-      content="Track upcoming Hawk'n'Roll pickleball games and mark attendance live from your phone."
+      content="Manage the Hawk'n'Roll team schedule, availability, roster, and match results live from Firebase."
     />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
@@ -22,118 +22,68 @@
     />
   </head>
   <body>
-    <div class="page-shell">
-      <header class="hero">
-        <div class="hero__content">
-          <p class="eyebrow">Blackhawk Country Club</p>
-          <div class="hero__title-row">
-            <h1>Hawk'n'Roll Pickleball Attendance</h1>
-            <div class="hero__logo-inline-wrap">
-              <img
-                class="hero__logo-inline"
-                src="./logo.jpg"
-                alt="Hawk'n'Roll pickleball team logo"
-              />
-            </div>
-          </div>
-          <p class="hero__copy">
-            Check upcoming match dates, see who is in, and update your own
-            availability in seconds.
-          </p>
+    <div class="app-shell">
+      <button
+        type="button"
+        class="nav-overlay"
+        id="nav-overlay"
+        aria-label="Close menu"
+        hidden
+      ></button>
 
-          <div class="hero__stats" id="hero-stats">
-            <article class="stat-card">
-              <span class="stat-card__label">Upcoming games</span>
-              <strong class="stat-card__value" id="games-count">0</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-card__label">Roster size</span>
-              <strong class="stat-card__value" id="players-count">15</strong>
-            </article>
-            <article class="stat-card">
-              <span class="stat-card__label">Next game</span>
-              <strong class="stat-card__value stat-card__value--small" id="next-game"
-                >Add dates in roster-app.js</strong
-              >
-            </article>
+      <aside class="side-nav" id="side-nav" aria-label="Primary navigation">
+        <div class="side-nav__brand">
+          <div class="side-nav__logo-wrap">
+            <img src="./logo.jpg" alt="Hawk'n'Roll pickleball team logo" />
+          </div>
+          <div>
+            <p class="eyebrow">Blackhawk Country Club</p>
+            <h2 class="side-nav__title">Hawk'n'Roll</h2>
+            <p class="side-nav__copy">Keep the team organized for every match.</p>
           </div>
         </div>
-      </header>
 
-      <main class="content">
-        <section class="panel panel--accent">
-          <div class="panel__header">
-            <div>
-              <p class="panel__eyebrow">Your status</p>
-              <h2>Choose your name</h2>
-            </div>
-          </div>
+        <nav class="side-nav__menu">
+          <button type="button" class="nav-link is-active" data-view-target="schedule">
+            Schedule
+          </button>
+          <button type="button" class="nav-link" data-view-target="availability">
+            Availability
+          </button>
+          <button type="button" class="nav-link" data-view-target="roster">
+            Roster
+          </button>
+          <button type="button" class="nav-link" data-view-target="team">
+            Team Standing
+          </button>
+          <button
+            type="button"
+            class="nav-link"
+            id="nav-player-admin"
+            data-view-target="player-admin"
+            hidden
+          >
+            Player Mgmt
+          </button>
+          <button
+            type="button"
+            class="nav-link"
+            id="nav-schedule-admin"
+            data-view-target="schedule-admin"
+            hidden
+          >
+            Schedule Mgmt
+          </button>
+        </nav>
 
-          <div class="selector-row">
-            <label class="field">
-              <span class="field__label">Player</span>
-              <select id="player-select" class="field__input">
-                <option value="">Select your name</option>
-              </select>
-            </label>
-
-            <div class="selection-summary">
-              <span class="selection-summary__label">Selected player</span>
-              <strong id="selected-player-name">None selected</strong>
-              <p>Cycle through the schedule and mark yourself Available or Unavailable for each game.</p>
-            </div>
-          </div>
-
-          <div class="status-banner is-hidden" id="status-banner" aria-live="polite">
-            Loading games from Firebase...
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel__header">
-            <div>
-              <p class="panel__eyebrow">Upcoming dates</p>
-              <h2>Game availability board</h2>
-            </div>
-          </div>
-
-          <div class="games-board">
-            <div
-              id="games-pager"
-              class="games-pager is-hidden"
-              role="navigation"
-              aria-label="Browse scheduled games"
-            >
-              <button type="button" id="games-prev" class="games-pager__btn action-btn">
-                Previous
-              </button>
-              <span id="games-pager-label" class="games-pager__label"></span>
-              <button type="button" id="games-next" class="games-pager__btn action-btn">
-                Next
-              </button>
-            </div>
-            <div id="games-grid" class="games-board__view"></div>
-          </div>
-        </section>
-
-        <section class="panel panel--muted">
-          <div class="panel__header">
-            <div>
-                <p class="panel__eyebrow">Admin Tools</p>
-                <h2>Game and Player Manager</h2>
-            </div>
-          </div>
-
-          <div class="admin-auth">
-            <div class="selection-summary">
-              <span class="selection-summary__label">Signed-in account</span>
-              <strong id="admin-user-email">Not signed in</strong>
-              <p id="admin-helper-text">
-                Sign in with an approved admin account to manage players and games.
-              </p>
-            </div>
-
-            <div class="admin-auth__actions">
+        <div class="side-nav__footer">
+          <div class="nav-admin-card">
+            <span class="selection-summary__label">Admin access</span>
+            <strong id="admin-user-email">Not signed in</strong>
+            <p id="admin-helper-text">
+              Sign in with an approved admin account to manage players, rosters, and scores.
+            </p>
+            <div class="admin-auth__actions nav-admin-card__actions">
               <button type="button" class="action-btn action-btn--admin" id="admin-sign-in">
                 Sign in with Google
               </button>
@@ -142,160 +92,238 @@
               </button>
             </div>
           </div>
+        </div>
+      </aside>
 
-          <div class="admin-status is-hidden" id="admin-status">
-            Sign in to make changes.
-          </div>
-
-          <button type="button" class="admin-debug-toggle" id="admin-debug-toggle">
-            Show sign-in details
+      <div class="app-main">
+        <header class="topbar">
+          <button
+            type="button"
+            class="nav-toggle"
+            id="nav-toggle"
+            aria-controls="side-nav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
           </button>
 
-          <div class="admin-debug" id="admin-debug" hidden></div>
-
-          <div class="admin-subsection">
-            <div class="panel__header">
-              <div>
-                <p class="panel__eyebrow">Roster</p>
-                <h3>Players</h3>
-              </div>
-            </div>
-
-            <div class="players-admin-board">
-              <div
-                id="players-admin-pager"
-                class="games-pager is-hidden"
-                role="navigation"
-                aria-label="Browse players"
-              >
-                <button
-                  type="button"
-                  id="players-admin-prev"
-                  class="games-pager__btn action-btn"
-                >
-                  Previous
-                </button>
-                <span
-                  id="players-admin-pager-label"
-                  class="games-pager__label"
-                ></span>
-                <button
-                  type="button"
-                  id="players-admin-next"
-                  class="games-pager__btn action-btn"
-                >
-                  Next
-                </button>
-              </div>
-              <div class="players-admin-grid" id="players-admin-grid"></div>
-            </div>
+          <div class="topbar__intro">
+            <p class="topbar__eyebrow">Team Management</p>
+            <strong class="topbar__label" id="topbar-label">Schedule</strong>
           </div>
 
-          <div class="admin-subsection">
-            <div class="panel__header">
-              <div>
-                <p class="panel__eyebrow">Schedule</p>
-                <h3>Games</h3>
-              </div>
-            </div>
-
-            <div class="admin-games-board">
-              <div
-                id="admin-games-pager"
-                class="games-pager is-hidden"
-                role="navigation"
-                aria-label="Browse admin games"
-              >
-                <button
-                  type="button"
-                  id="admin-games-prev"
-                  class="games-pager__btn action-btn"
-                >
-                  Previous
-                </button>
-                <span
-                  id="admin-games-pager-label"
-                  class="games-pager__label"
-                ></span>
-                <button
-                  type="button"
-                  id="admin-games-next"
-                  class="games-pager__btn action-btn"
-                >
-                  Next
-                </button>
-              </div>
-              <div class="admin-grid" id="admin-grid"></div>
-            </div>
+          <div class="topbar__logo-wrap">
+            <img
+              class="topbar__logo"
+              src="./logo.jpg"
+              alt="Hawk'n'Roll pickleball team logo"
+            />
           </div>
+        </header>
 
-          <template id="admin-card-template">
-            <article class="admin-card">
-              <div class="admin-card__header">
+        <div class="page-shell">
+          <header class="hero">
+            <div class="hero__content">
+              <div class="hero__stats" id="hero-stats">
+                <article class="stat-card" id="matches-stat-card">
+                  <span class="stat-card__label">Matches</span>
+                  <strong class="stat-card__value" id="games-count">0</strong>
+                </article>
+                <article class="stat-card" id="roster-stat-card">
+                  <span class="stat-card__label">Roster</span>
+                  <strong class="stat-card__value" id="players-count">0</strong>
+                </article>
+              </div>
+            </div>
+          </header>
+
+          <main class="content">
+            <div class="admin-status is-hidden" id="admin-status">
+              Sign in to make changes.
+            </div>
+
+            <section class="panel view-section" id="view-schedule">
+              <div class="panel__header">
                 <div>
-                  <h3 data-role="admin-title"></h3>
-                  <p class="admin-card__meta" data-role="admin-meta"></p>
+                  <p class="panel__eyebrow">Main page</p>
+                  <h2>Schedule</h2>
                 </div>
-                <span class="game-card__badge" data-role="admin-badge"></span>
+                <p class="panel__copy">
+                  See upcoming matches at a glance so you always know when and where the team is playing.
+                </p>
               </div>
 
-              <form class="admin-form" data-role="admin-form">
+              <div class="cards-grid" id="schedule-grid"></div>
+            </section>
+
+            <section class="panel panel--accent view-section" id="view-availability" hidden>
+              <div class="selector-row">
                 <label class="field">
-                  <span class="field__label">Game date</span>
-                  <input class="field__input" type="date" data-role="date-input" required />
+                  <span class="field__label">Player</span>
+                  <select id="player-select" class="field__input">
+                    <option value="">Select your name</option>
+                  </select>
                 </label>
-
-                <label class="field">
-                  <span class="field__label">Start time (Pacific)</span>
-                  <input class="field__input" type="time" data-role="time-input" required />
-                </label>
-
-                <label class="field">
-                  <span class="field__label">Location</span>
-                  <input class="field__input" type="text" data-role="location-input" required />
-                </label>
-
-                <label class="field">
-                  <span class="field__label">Match label</span>
-                  <input class="field__input" type="text" data-role="opponent-input" required />
-                </label>
-
-                <div class="admin-form__actions" data-role="admin-actions"></div>
-              </form>
-            </article>
-          </template>
-
-          <template id="player-admin-template">
-            <article class="admin-card">
-              <div class="admin-card__header">
-                <div>
-                  <h3 data-role="player-title"></h3>
-                  <p class="admin-card__meta" data-role="player-meta"></p>
-                </div>
-                <span class="game-card__badge" data-role="player-badge"></span>
               </div>
 
-              <form class="admin-form" data-role="player-form">
-                <label class="field">
-                  <span class="field__label">First name</span>
-                  <input class="field__input" type="text" data-role="first-name-input" required />
-                </label>
+              <p class="availability-helper">
+                Select your name to view your availibity per game. Mark your status by cycling through each game.
+              </p>
 
-                <label class="field">
-                  <span class="field__label">Last name</span>
-                  <input class="field__input" type="text" data-role="last-name-input" required />
-                </label>
+              <div class="status-banner is-hidden" id="status-banner" aria-live="polite">
+                Loading games from Firebase...
+              </div>
 
-                <div class="admin-form__actions" data-role="player-actions"></div>
-              </form>
-            </article>
-          </template>
-        </section>
+              <div class="games-board">
+                <div
+                  id="games-pager"
+                  class="games-pager is-hidden"
+                  role="navigation"
+                  aria-label="Browse scheduled games"
+                >
+                  <button type="button" id="games-prev" class="games-pager__btn action-btn">
+                    Previous
+                  </button>
+                  <span id="games-pager-label" class="games-pager__label"></span>
+                  <button type="button" id="games-next" class="games-pager__btn action-btn">
+                    Next
+                  </button>
+                </div>
+                <div id="games-grid" class="games-board__view"></div>
+              </div>
+            </section>
 
-      </main>
+            <section class="panel view-section" id="view-roster" hidden>
+              <div class="panel__header">
+                <div>
+                  <p class="panel__eyebrow" id="roster-view-eyebrow">Captain view</p>
+                  <h2>Roster</h2>
+                </div>
+                <p class="panel__copy" id="roster-view-copy">
+                  Choose which active players are in for each matchup. Phase 1 uses the current admin login for roster edits.
+                </p>
+              </div>
+
+              <div class="games-board">
+                <div
+                  id="roster-pager"
+                  class="games-pager is-hidden"
+                  role="navigation"
+                  aria-label="Browse roster matchups"
+                >
+                  <button type="button" id="roster-prev" class="games-pager__btn action-btn">
+                    Previous
+                  </button>
+                  <span id="roster-pager-label" class="games-pager__label"></span>
+                  <button type="button" id="roster-next" class="games-pager__btn action-btn">
+                    Next
+                  </button>
+                </div>
+                <div id="roster-grid" class="games-board__view"></div>
+              </div>
+            </section>
+
+            <section class="panel view-section" id="view-team" hidden>
+              <div class="panel__header">
+                <div>
+                  <p class="panel__eyebrow">Results snapshot</p>
+                  <h2>Team Standing</h2>
+                </div>
+                <p class="panel__copy">
+                  See how the team is doing overall and how we stack up against each opponent.
+                </p>
+              </div>
+
+              <div class="cards-grid cards-grid--compact" id="team-standing-grid"></div>
+              <div class="games-grid__empty" id="team-standing-note">
+                Enter final scores in Admin to start building standings.
+              </div>
+            </section>
+
+            <section class="panel panel--muted view-section" id="view-player-admin" hidden>
+              <div class="admin-subsection">
+                <div class="players-admin-board">
+                  <div
+                    id="players-admin-pager"
+                    class="games-pager is-hidden"
+                    role="navigation"
+                    aria-label="Browse players"
+                  >
+                    <button
+                      type="button"
+                      id="players-admin-prev"
+                      class="games-pager__btn action-btn"
+                    >
+                      Previous
+                    </button>
+                    <span
+                      id="players-admin-pager-label"
+                      class="games-pager__label"
+                    ></span>
+                    <button
+                      type="button"
+                      id="players-admin-next"
+                      class="games-pager__btn action-btn"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div class="players-admin-grid" id="players-admin-grid"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel panel--muted view-section" id="view-schedule-admin" hidden>
+              <div class="admin-subsection">
+                <div class="admin-games-board">
+                  <div
+                    id="admin-games-pager"
+                    class="games-pager is-hidden"
+                    role="navigation"
+                    aria-label="Browse admin games"
+                  >
+                    <button
+                      type="button"
+                      id="admin-games-prev"
+                      class="games-pager__btn action-btn"
+                    >
+                      Previous
+                    </button>
+                    <span
+                      id="admin-games-pager-label"
+                      class="games-pager__label"
+                    ></span>
+                    <button
+                      type="button"
+                      id="admin-games-next"
+                      class="games-pager__btn action-btn"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div class="admin-grid" id="admin-grid"></div>
+                </div>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
     </div>
 
-    <template id="game-card-template">
+    <template id="schedule-card-template">
+      <article class="game-card schedule-card">
+        <div>
+          <p class="game-card__date" data-role="schedule-date"></p>
+          <h3 class="game-card__title" data-role="schedule-title"></h3>
+          <p class="game-card__meta" data-role="schedule-meta"></p>
+        </div>
+      </article>
+    </template>
+
+    <template id="availability-card-template">
       <article class="game-card">
         <div class="game-card__top">
           <div>
@@ -303,7 +331,7 @@
             <h3 class="game-card__title"></h3>
             <p class="game-card__meta"></p>
           </div>
-          <span class="game-card__badge">Upcoming</span>
+          <span class="game-card__badge" data-role="availability-badge">Upcoming</span>
         </div>
 
         <div class="game-card__summary">
@@ -322,6 +350,38 @@
         </div>
 
         <div class="player-list" data-role="player-list"></div>
+      </article>
+    </template>
+
+    <template id="roster-card-template">
+      <article class="game-card roster-card">
+        <div class="game-card__top">
+          <div>
+            <p class="game-card__date" data-role="roster-date"></p>
+            <h3 class="game-card__title" data-role="roster-title"></h3>
+            <p class="game-card__meta" data-role="roster-meta"></p>
+          </div>
+          <span class="game-card__badge" data-role="roster-badge">Upcoming</span>
+        </div>
+
+        <div class="game-card__summary">
+          <div class="summary-chip summary-chip--brand">
+            <span>Selected</span>
+            <strong data-role="roster-selected-count">0</strong>
+          </div>
+          <div class="summary-chip summary-chip--in">
+            <span>Available</span>
+            <strong data-role="roster-in-count">0</strong>
+          </div>
+          <div class="summary-chip">
+            <span>No response</span>
+            <strong data-role="roster-pending-count">0</strong>
+          </div>
+        </div>
+
+        <p class="roster-card__helper" data-role="roster-helper"></p>
+        <div class="roster-card__selected" data-role="roster-selected"></div>
+        <div class="roster-card__toggles" data-role="roster-toggle-list"></div>
       </article>
     </template>
 
@@ -344,6 +404,97 @@
           </button>
         </div>
       </div>
+    </template>
+
+    <template id="roster-toggle-template">
+      <button type="button" class="roster-toggle" data-role="roster-toggle"></button>
+    </template>
+
+    <template id="admin-card-template">
+      <article class="admin-card">
+        <div class="admin-card__header">
+          <div>
+            <h3 data-role="admin-title"></h3>
+            <p class="admin-card__meta" data-role="admin-meta"></p>
+          </div>
+          <span class="game-card__badge" data-role="admin-badge"></span>
+        </div>
+
+        <form class="admin-form" data-role="admin-form">
+          <label class="field">
+            <span class="field__label">Game date</span>
+            <input class="field__input" type="date" data-role="date-input" required />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Start time (Pacific)</span>
+            <input class="field__input" type="time" data-role="time-input" required />
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" data-role="tbd-input" />
+            <span>Date and time TBD</span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Location</span>
+            <input class="field__input" type="text" data-role="location-input" required />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Match label</span>
+            <input class="field__input" type="text" data-role="opponent-input" required />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Match status</span>
+            <select class="field__input" data-role="status-input">
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+
+          <div class="admin-form__score-grid">
+            <label class="field">
+              <span class="field__label">Hawk'n'Roll score</span>
+              <input class="field__input" type="number" min="0" step="1" data-role="team-score-input" />
+            </label>
+
+            <label class="field">
+              <span class="field__label">Opponent score</span>
+              <input class="field__input" type="number" min="0" step="1" data-role="opponent-score-input" />
+            </label>
+          </div>
+
+          <div class="admin-form__actions" data-role="admin-actions"></div>
+        </form>
+      </article>
+    </template>
+
+    <template id="player-admin-template">
+      <article class="admin-card">
+        <div class="admin-card__header">
+          <div>
+            <h3 data-role="player-title"></h3>
+            <p class="admin-card__meta" data-role="player-meta"></p>
+          </div>
+          <span class="game-card__badge" data-role="player-badge"></span>
+        </div>
+
+        <form class="admin-form" data-role="player-form">
+          <label class="field">
+            <span class="field__label">First name</span>
+            <input class="field__input" type="text" data-role="first-name-input" required />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Last name</span>
+            <input class="field__input" type="text" data-role="last-name-input" required />
+          </label>
+
+          <div class="admin-form__actions" data-role="player-actions"></div>
+        </form>
+      </article>
     </template>
 
     <script>
