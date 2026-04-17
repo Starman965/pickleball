@@ -20,6 +20,7 @@
       href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="./roster-styles.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -514,19 +515,6 @@
       </article>
     </template>
 
-    <script>
-      (function loadFreshAssets() {
-        const cacheBust = Date.now();
-        const stylesheet = document.createElement("link");
-        stylesheet.rel = "stylesheet";
-        stylesheet.href = `./roster-styles.css?v=${cacheBust}`;
-        document.head.appendChild(stylesheet);
-
-        const appScript = document.createElement("script");
-        appScript.type = "module";
-        appScript.src = `./roster-app.js?v=${cacheBust}`;
-        document.body.appendChild(appScript);
-      })();
-    </script>
+    <script type="module" src="./roster-app.js"></script>
   </body>
 </html>
