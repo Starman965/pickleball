@@ -36,6 +36,12 @@ const APPROVED_ADMIN_EMAILS = new Set([
 const DEFAULT_NEW_GAME_TIME = "12:00";
 
 const VIEW_META = {
+  members: {
+    label: "The Team",
+    eyebrow: "Current roster",
+    title: "The Team",
+    copy: "Meet the Hawk'n'Roll players who make up the team this season.",
+  },
   schedule: {
     label: "Schedule",
     eyebrow: "Blackhawk Country Club",
@@ -51,9 +57,9 @@ const VIEW_META = {
       "Choose your name once and update your response for each matchup without leaving the schedule flow.",
   },
   roster: {
-    label: "Roster",
+    label: "Game Rosters",
     eyebrow: "Captain planning",
-    title: "Matchup Roster",
+    title: "Game Rosters",
     copy:
       "Select who is in for each matchup and keep the captain roster visible alongside availability counts.",
   },
@@ -122,6 +128,7 @@ const heroStats = document.getElementById("hero-stats");
 const matchesStatCard = document.getElementById("matches-stat-card");
 const rosterStatCard = document.getElementById("roster-stat-card");
 
+const membersGrid = document.getElementById("members-grid");
 const scheduleGrid = document.getElementById("schedule-grid");
 const playerSelect = document.getElementById("player-select");
 const selectedPlayerName = document.getElementById("selected-player-name");
@@ -208,6 +215,15 @@ function buildPlayerId(firstName, lastName) {
   const base = slugify(buildFullName(firstName, lastName));
   const suffix = Math.random().toString(36).slice(2, 6);
   return `${base || "player"}-${suffix}`;
+}
+
+function buildPlayerInitials(player) {
+  const initials = `${player.firstName?.[0] ?? ""}${player.lastName?.[0] ?? ""}`.trim();
+  if (initials) {
+    return initials.toUpperCase();
+  }
+
+  return (player.fullName?.slice(0, 2) ?? "TM").toUpperCase();
 }
 
 function getPlayerById(playerId) {
@@ -316,7 +332,7 @@ function updateViewUi() {
   if (heroStats) {
     const showStats = !["availability", "team", "roster"].includes(activeView);
     const showMatchesStat = activeView === "schedule" || activeView === "schedule-admin";
-    const showRosterStat = activeView === "player-admin";
+    const showRosterStat = activeView === "player-admin" || activeView === "members";
 
     heroStats.hidden = !showStats;
 
@@ -1097,6 +1113,35 @@ function renderScheduleView() {
   });
 }
 
+function buildTeamMemberCard(player) {
+  const card = document.createElement("article");
+  card.className = "game-card team-member-card";
+
+  const top = document.createElement("div");
+  top.className = "team-member-card__top";
+
+  const avatar = document.createElement("div");
+  avatar.className = "team-member-card__avatar";
+  avatar.textContent = buildPlayerInitials(player);
+
+  const badge = document.createElement("span");
+  badge.className = `game-card__badge ${player.active ? "" : "game-card__badge--muted"}`.trim();
+  badge.textContent = player.active ? "Active" : "Inactive";
+
+  top.append(avatar, badge);
+
+  const name = document.createElement("h3");
+  name.className = "team-member-card__name";
+  name.textContent = player.fullName || "Team player";
+
+  const meta = document.createElement("p");
+  meta.className = "team-member-card__meta";
+  meta.textContent = player.active ? "Current team player" : "Not currently active";
+
+  card.append(top, name, meta);
+  return card;
+}
+
 function updateGamesPager() {
   const total = games.length;
 
@@ -1210,6 +1255,22 @@ function renderTeamStandingView() {
         `PF ${row.pointsFor} • PA ${row.pointsAgainst}`,
       ),
     );
+  });
+}
+
+function renderMembersView() {
+  membersGrid.innerHTML = "";
+
+  if (!players.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No players are on the roster yet.";
+    membersGrid.append(empty);
+    return;
+  }
+
+  players.forEach((player) => {
+    membersGrid.append(buildTeamMemberCard(player));
   });
 }
 
@@ -1987,6 +2048,7 @@ function renderApp() {
   updateViewUi();
   refreshAdminSessionUi();
   renderPlayerSelect();
+  renderMembersView();
   renderScheduleView();
   renderAvailabilityView();
   renderRosterView();

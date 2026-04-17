@@ -741,6 +741,42 @@ select.field__input option {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.team-member-card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.team-member-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.team-member-card__avatar {
+  width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 200, 61, 0.12);
+  border: 1px solid rgba(255, 200, 61, 0.22);
+  color: #ffe7a5;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.team-member-card__name {
+  font-size: 1.2rem;
+}
+
+.team-member-card__meta {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
 .game-card__badge--win {
   color: #b9ffd0;
   border-color: rgba(34, 197, 94, 0.3);
