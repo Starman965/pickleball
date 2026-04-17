@@ -14,7 +14,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDocs,
   getFirestore,
   onSnapshot,
   serverTimestamp,
@@ -31,28 +30,54 @@ const firebaseConfig = {
   appId: "1:1037647483069:web:f82d7da424b6611b7067d4",
 };
 
-const INITIAL_PLAYERS = [
-  { id: "paddy-ramanathan", firstName: "Paddy", lastName: "Ramanathan" },
-  { id: "steve-ronan", firstName: "Steve", lastName: "Ronan" },
-  { id: "nate-chessin", firstName: "Nate", lastName: "Chessin" },
-  { id: "robert-fletcher", firstName: "Robert", lastName: "Fletcher" },
-  { id: "anubhav-gupta", firstName: "Anubhav", lastName: "Gupta" },
-  { id: "arvind-gupta", firstName: "Arvind", lastName: "Gupta" },
-  { id: "david-lewis", firstName: "David", lastName: "Lewis" },
-  { id: "jatinder-marwaha", firstName: "Jatinder", lastName: "Marwaha" },
-  { id: "david-nosal", firstName: "David", lastName: "Nosal" },
-  { id: "neel-palle", firstName: "Neel", lastName: "Palle" },
-  { id: "amilcar-perez", firstName: "Amilcar", lastName: "Perez" },
-  { id: "prithvi-raj", firstName: "Prithvi", lastName: "Raj" },
-  { id: "shraven-songani", firstName: "Shraven", lastName: "Songani" },
-  { id: "brian-steffi", firstName: "Brian", lastName: "Steffi" },
-  { id: "steve-zelenswski", firstName: "Steve", lastName: "Zelenswski" },
-];
-
 const APPROVED_ADMIN_EMAILS = new Set([
   "demandgendave@gmail.com",
   "ronan@flycurrent.ai",
 ]);
+const DEFAULT_NEW_GAME_TIME = "12:00";
+
+const VIEW_META = {
+  schedule: {
+    label: "Schedule",
+    eyebrow: "Blackhawk Country Club",
+    title: "Team Schedule",
+    copy:
+      "See every matchup on the calendar, monitor live availability, and keep the roster aligned for each date.",
+  },
+  availability: {
+    label: "Availability",
+    eyebrow: "Player response",
+    title: "Availability Board",
+    copy:
+      "Choose your name once and update your response for each matchup without leaving the schedule flow.",
+  },
+  roster: {
+    label: "Roster",
+    eyebrow: "Captain planning",
+    title: "Matchup Roster",
+    copy:
+      "Select who is in for each matchup and keep the captain roster visible alongside availability counts.",
+  },
+  team: {
+    label: "Team Standing",
+    eyebrow: "Results",
+    title: "Team Standing",
+    copy:
+      "Final matchup scores roll up into win-loss tracking against each opponent as results are entered.",
+  },
+  "player-admin": {
+    label: "Player Mgmt",
+    eyebrow: "Operations",
+    title: "Player Mgmt",
+    copy: "Add players, update names, and manage who is active on the team.",
+  },
+  "schedule-admin": {
+    label: "Schedule Mgmt",
+    eyebrow: "Operations",
+    title: "Schedule Mgmt",
+    copy: "Create matchups, update details, and enter final scores.",
+  },
+};
 
 const PT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
@@ -79,89 +104,6 @@ const PACIFIC_CLOCK_FORMATTER = new Intl.DateTimeFormat("en-US", {
   hour12: false,
 });
 
-const MOCK_GAMES = [
-  {
-    id: "2026-04-18-canyon-club",
-    dateLabel: "Saturday, April 18",
-    isoDate: "2026-04-18T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - Canyon Courts",
-    opponent: "Open Ladder Session",
-  },
-  {
-    id: "2026-04-25-lakeside",
-    dateLabel: "Saturday, April 25",
-    isoDate: "2026-04-25T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - Lakeside Courts",
-    opponent: "Club Scrimmage",
-  },
-  {
-    id: "2026-05-02-east-courts",
-    dateLabel: "Saturday, May 2",
-    isoDate: "2026-05-02T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - East Courts",
-    opponent: "Pickle Hawks Warmup",
-  },
-  {
-    id: "2026-05-02-stadium-court",
-    dateLabel: "Saturday, May 2",
-    isoDate: "2026-05-02T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - Stadium Court",
-    opponent: "Bonus Match Play",
-  },
-  {
-    id: "2026-05-09-canyon-club",
-    dateLabel: "Saturday, May 9",
-    isoDate: "2026-05-09T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - Canyon Courts",
-    opponent: "Spring Team Challenge",
-  },
-  {
-    id: "2026-05-16-garden-courts",
-    dateLabel: "Saturday, May 16",
-    isoDate: "2026-05-16T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - Garden Courts",
-    opponent: "Round Robin Session",
-  },
-  {
-    id: "2026-05-16-lakeside",
-    dateLabel: "Saturday, May 16",
-    isoDate: "2026-05-16T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - Lakeside Courts",
-    opponent: "Extra Court Rotation",
-  },
-  {
-    id: "2026-05-23-west-courts",
-    dateLabel: "Saturday, May 23",
-    isoDate: "2026-05-23T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - West Courts",
-    opponent: "Memorial Weekend Mixer",
-  },
-  {
-    id: "2026-05-30-center-court",
-    dateLabel: "Saturday, May 30",
-    isoDate: "2026-05-30T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - Center Court",
-    opponent: "Season Finale Match Day",
-  },
-  {
-    id: "2026-05-30-championship-court",
-    dateLabel: "Saturday, May 30",
-    isoDate: "2026-05-30T10:00:00-07:00",
-    timeLabel: "10:00 AM PT",
-    location: "Blackhawk Country Club - Championship Court",
-    opponent: "Captain's Pick Showcase",
-  },
-];
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -169,6 +111,19 @@ const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: "select_account" });
 
+const navToggle = document.getElementById("nav-toggle");
+const navOverlay = document.getElementById("nav-overlay");
+const sideNav = document.getElementById("side-nav");
+const navButtons = Array.from(document.querySelectorAll("[data-view-target]"));
+const playerAdminNav = document.getElementById("nav-player-admin");
+const scheduleAdminNav = document.getElementById("nav-schedule-admin");
+const viewSections = Array.from(document.querySelectorAll(".view-section"));
+const topbarLabel = document.getElementById("topbar-label");
+const heroStats = document.getElementById("hero-stats");
+const matchesStatCard = document.getElementById("matches-stat-card");
+const rosterStatCard = document.getElementById("roster-stat-card");
+
+const scheduleGrid = document.getElementById("schedule-grid");
 const playerSelect = document.getElementById("player-select");
 const selectedPlayerName = document.getElementById("selected-player-name");
 const statusBanner = document.getElementById("status-banner");
@@ -177,12 +132,19 @@ const gamesPager = document.getElementById("games-pager");
 const gamesPrev = document.getElementById("games-prev");
 const gamesNext = document.getElementById("games-next");
 const gamesPagerLabel = document.getElementById("games-pager-label");
+const rosterGrid = document.getElementById("roster-grid");
+const rosterPager = document.getElementById("roster-pager");
+const rosterPrev = document.getElementById("roster-prev");
+const rosterNext = document.getElementById("roster-next");
+const rosterPagerLabel = document.getElementById("roster-pager-label");
+const rosterViewEyebrow = document.getElementById("roster-view-eyebrow");
+const rosterViewCopy = document.getElementById("roster-view-copy");
+const teamStandingGrid = document.getElementById("team-standing-grid");
+const teamStandingNote = document.getElementById("team-standing-note");
 const gamesCount = document.getElementById("games-count");
 const playersCount = document.getElementById("players-count");
-const nextGame = document.getElementById("next-game");
+
 const adminStatus = document.getElementById("admin-status");
-const adminDebug = document.getElementById("admin-debug");
-const adminDebugToggle = document.getElementById("admin-debug-toggle");
 const adminGrid = document.getElementById("admin-grid");
 const adminGamesPager = document.getElementById("admin-games-pager");
 const adminGamesPrev = document.getElementById("admin-games-prev");
@@ -197,17 +159,24 @@ const adminUserEmail = document.getElementById("admin-user-email");
 const adminHelperText = document.getElementById("admin-helper-text");
 const adminSignIn = document.getElementById("admin-sign-in");
 const adminSignOut = document.getElementById("admin-sign-out");
+
+const scheduleCardTemplate = document.getElementById("schedule-card-template");
+const availabilityCardTemplate = document.getElementById("availability-card-template");
+const rosterCardTemplate = document.getElementById("roster-card-template");
 const adminCardTemplate = document.getElementById("admin-card-template");
 const playerAdminTemplate = document.getElementById("player-admin-template");
-const gameTemplate = document.getElementById("game-card-template");
 const playerTemplate = document.getElementById("player-row-template");
 
+let activeView = "schedule";
+let navOpen = false;
 let selectedPlayerId = "";
 let players = [];
 let games = [];
 let savingState = false;
 let gameBoardIndex = 0;
 let lastGamesSignature = "";
+let rosterBoardIndex = 0;
+let lastRosterSignature = "";
 let gameAdminIndex = 0;
 let lastGamesAdminSignature = "";
 let playerAdminIndex = 0;
@@ -216,33 +185,6 @@ let adminUser = null;
 let isApprovedAdmin = false;
 let lastAuthFlowEvent = "No Firebase auth event yet";
 let lastAuthStateEvent = "Firebase auth state has not reported yet";
-let adminDebugVisible = false;
-
-adminSignIn.addEventListener("click", async () => {
-  await beginAdminSignIn();
-});
-
-adminSignOut.addEventListener("click", async () => {
-  try {
-    await signOut(auth);
-    setAdminStatus("Signed out of admin access.", "");
-  } catch (error) {
-    console.error(error);
-    setAdminStatus("Could not sign out right now.", "error");
-  }
-});
-
-adminDebugToggle.addEventListener("click", () => {
-  adminDebugVisible = !adminDebugVisible;
-  refreshAdminDebugVisibility();
-});
-
-playerSelect.addEventListener("change", (event) => {
-  selectedPlayerId = event.target.value;
-  const selectedPlayer = getPlayerById(selectedPlayerId);
-  selectedPlayerName.textContent = selectedPlayer?.fullName ?? "None selected";
-  renderGames();
-});
 
 function normalizeEmail(email) {
   return (email ?? "").trim().toLowerCase();
@@ -277,6 +219,10 @@ function getPlayerById(playerId) {
   return players.find((player) => player.id === playerId) ?? null;
 }
 
+function getPlayerNameById(playerId) {
+  return getPlayerById(playerId)?.fullName ?? "Former player";
+}
+
 function getActivePlayers() {
   return players.filter((player) => player.active);
 }
@@ -299,10 +245,9 @@ function getAttendanceStatus(game, player) {
 function setStatus(message, tone = "") {
   statusBanner.textContent = message;
   statusBanner.className = "status-banner";
-  if (tone) {
+  if (tone === "warning" || tone === "error") {
     statusBanner.classList.add(`is-${tone}`);
-  }
-  if (!tone || tone === "success") {
+  } else {
     statusBanner.classList.add("is-hidden");
   }
 }
@@ -310,21 +255,11 @@ function setStatus(message, tone = "") {
 function setAdminStatus(message, tone = "") {
   adminStatus.textContent = message;
   adminStatus.className = "admin-status";
-  if (tone) {
+  if (tone === "warning" || tone === "error") {
     adminStatus.classList.add(`is-${tone}`);
-  }
-  if (!tone || tone === "success") {
+  } else {
     adminStatus.classList.add("is-hidden");
   }
-}
-
-function setAdminDebug(message) {
-  adminDebug.textContent = message;
-}
-
-function refreshAdminDebugVisibility() {
-  adminDebug.hidden = !adminDebugVisible;
-  adminDebugToggle.textContent = adminDebugVisible ? "Hide sign-in details" : "Show sign-in details";
 }
 
 function refreshAdminSessionUi() {
@@ -333,11 +268,12 @@ function refreshAdminSessionUi() {
   adminSignOut.hidden = !adminUser;
 
   if (isApprovedAdmin) {
-    adminHelperText.textContent = "You can update players, dates, and locations from here.";
+    adminHelperText.textContent = "";
   } else if (adminUser) {
-    adminHelperText.textContent = "This account is signed in, but it is not an approved admin account.";
+    adminHelperText.textContent = "This account is signed in, but it is not on the approved admin list.";
   } else {
-    adminHelperText.textContent = "Sign in with an approved admin account to manage players and games.";
+    adminHelperText.textContent =
+      "Sign in with an approved admin account to manage players, rosters, and scores.";
   }
 
   const currentUser = adminUser?.email ?? "none";
@@ -345,59 +281,124 @@ function refreshAdminSessionUi() {
   const signInMode = shouldPreferRedirectSignIn()
     ? "popup first, redirect fallback (mobile)"
     : "popup first, redirect fallback";
-  setAdminDebug(
-    [
-      `Host: ${window.location.host || "unknown"}`,
-      `Sign-in mode: ${signInMode}`,
-      `Firebase auth domain: ${firebaseConfig.authDomain}`,
-      `Current user: ${currentUser}`,
-      `Approval: ${approval}`,
-      `Allowed admins: ${Array.from(APPROVED_ADMIN_EMAILS).join(", ")}`,
-      `Last auth flow event: ${lastAuthFlowEvent}`,
-      `Last auth state event: ${lastAuthStateEvent}`,
-    ].join("\n"),
-  );
-  refreshAdminDebugVisibility();
 }
 
-async function beginAdminSignIn() {
-  try {
-    lastAuthFlowEvent = "Trying popup sign-in flow";
-    refreshAdminSessionUi();
-    setAdminStatus("Opening Google sign-in...", "success");
-    const result = await signInWithPopup(auth, googleProvider);
-    lastAuthFlowEvent = `Popup sign-in completed for ${result.user.email ?? "unknown email"}`;
-    refreshAdminSessionUi();
-  } catch (error) {
-    console.error(error);
+function setNavOpen(nextOpen) {
+  navOpen = nextOpen;
+  document.body.classList.toggle("nav-open", navOpen);
+  sideNav.classList.toggle("is-open", navOpen);
+  navOverlay.hidden = !navOpen;
+  navToggle.setAttribute("aria-expanded", String(navOpen));
+}
 
-    const fallbackCodes = new Set([
-      "auth/popup-blocked",
-      "auth/popup-closed-by-user",
-      "auth/cancelled-popup-request",
-      "auth/operation-not-supported-in-this-environment",
-    ]);
+function setActiveView(viewId) {
+  if (!VIEW_META[viewId]) {
+    return;
+  }
+  if ((viewId === "player-admin" || viewId === "schedule-admin") && !isApprovedAdmin) {
+    return;
+  }
+  activeView = viewId;
+  setNavOpen(false);
+  renderApp();
+}
 
-    if (fallbackCodes.has(error.code)) {
-      try {
-        lastAuthFlowEvent = `Popup failed with ${error.code}; falling back to redirect`;
-        refreshAdminSessionUi();
-        setAdminStatus("Sign-in popup was blocked. Trying again another way...", "warning");
-        await signInWithRedirect(auth, googleProvider);
-        return;
-      } catch (redirectError) {
-        console.error(redirectError);
-        lastAuthFlowEvent = `Redirect fallback failed with ${redirectError.code ?? "unknown error"}`;
-        refreshAdminSessionUi();
-        setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
-        return;
-      }
+function syncAdminNavAccess() {
+  const adminViewsVisible = isApprovedAdmin;
+
+  if (playerAdminNav) {
+    playerAdminNav.hidden = !adminViewsVisible;
+  }
+
+  if (scheduleAdminNav) {
+    scheduleAdminNav.hidden = !adminViewsVisible;
+  }
+
+  if (!adminViewsVisible && (activeView === "player-admin" || activeView === "schedule-admin")) {
+    activeView = "schedule";
+  }
+}
+
+function updateViewUi() {
+  syncAdminNavAccess();
+  const meta = VIEW_META[activeView];
+  topbarLabel.textContent = meta.label;
+
+  if (heroStats) {
+    const showStats = !["availability", "team", "roster"].includes(activeView);
+    const showMatchesStat = activeView === "schedule" || activeView === "schedule-admin";
+    const showRosterStat = activeView === "player-admin";
+
+    heroStats.hidden = !showStats;
+
+    if (matchesStatCard) {
+      matchesStatCard.hidden = !showMatchesStat;
     }
 
-    lastAuthFlowEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
-    refreshAdminSessionUi();
-    setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
+    if (rosterStatCard) {
+      rosterStatCard.hidden = !showRosterStat;
+    }
+
+    heroStats.classList.toggle("hero__stats--single", showStats && showMatchesStat !== showRosterStat);
   }
+
+  navButtons.forEach((button) => {
+    const isActive = button.dataset.viewTarget === activeView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-current", isActive ? "page" : "false");
+  });
+
+  viewSections.forEach((section) => {
+    section.hidden = section.id !== `view-${activeView}`;
+  });
+}
+
+function normalizeStringArray(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .filter((entry) => typeof entry === "string")
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function normalizeNullableNumber(value) {
+  if (value === "" || value === null || typeof value === "undefined") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeMatchStatus(value) {
+  return value === "completed" ? "completed" : "scheduled";
+}
+
+function deriveMatchResult(matchStatus, teamScore, opponentScore) {
+  if (matchStatus !== "completed") {
+    return "pending";
+  }
+  if (teamScore === null || opponentScore === null) {
+    return "pending";
+  }
+  if (teamScore > opponentScore) {
+    return "win";
+  }
+  if (teamScore < opponentScore) {
+    return "loss";
+  }
+  return "tie";
+}
+
+function hasFinalScore(game) {
+  return game.teamScore !== null && game.opponentScore !== null;
 }
 
 function createDefaultAttendance(playerList = getActivePlayers()) {
@@ -413,14 +414,12 @@ function normalizeTimeHHMM(value) {
   }
 
   const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
-
   if (!match) {
     return "10:00";
   }
 
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
-
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
     return "10:00";
   }
@@ -430,7 +429,7 @@ function normalizeTimeHHMM(value) {
 
 function readPacificClock(utcMs) {
   const parts = PACIFIC_CLOCK_FORMATTER.formatToParts(new Date(utcMs));
-  const pick = (type) => Number(parts.find((p) => p.type === type)?.value ?? NaN);
+  const pick = (type) => Number(parts.find((part) => part.type === type)?.value ?? NaN);
 
   return {
     y: pick("year"),
@@ -443,7 +442,6 @@ function readPacificClock(utcMs) {
 
 function pacificDateKeyFromUtcMs(utcMs) {
   const z = readPacificClock(utcMs);
-
   if (Number.isNaN(z.y) || Number.isNaN(z.mo) || Number.isNaN(z.d)) {
     return "";
   }
@@ -453,11 +451,9 @@ function pacificDateKeyFromUtcMs(utcMs) {
 
 function pacificDateKeyFromIso(isoDateStr) {
   const ms = Date.parse(isoDateStr);
-
   if (Number.isNaN(ms)) {
     return "";
   }
-
   return pacificDateKeyFromUtcMs(ms);
 }
 
@@ -468,7 +464,6 @@ function pacificWallTimeToUtcMs(dateValue, timeHHMM) {
 
   for (let ms = dayStart - 12 * 3600 * 1000; ms < dayStart + 36 * 3600 * 1000; ms += 60 * 1000) {
     const z = readPacificClock(ms);
-
     if (z.y === y && z.mo === mo && z.d === d && z.h === h && z.m === mi) {
       return ms;
     }
@@ -479,7 +474,6 @@ function pacificWallTimeToUtcMs(dateValue, timeHHMM) {
 
 function pacificTimeInputValueFromIso(isoDateStr) {
   const ms = Date.parse(isoDateStr);
-
   if (Number.isNaN(ms)) {
     return "10:00";
   }
@@ -496,25 +490,37 @@ function buildScheduleFields(dateValue, timeHHMM = "10:00") {
   const time = normalizeTimeHHMM(timeHHMM);
   const utcMs = pacificWallTimeToUtcMs(dateValue, time);
   const instant = new Date(utcMs);
-  const isoDate = instant.toISOString();
-  const dateLabel = PT_DATE_FORMATTER.format(instant);
-  const timeLabel = `${PT_TIME_LABEL_FORMATTER.format(instant)} PT`;
 
   return {
-    isoDate,
-    dateLabel,
-    timeLabel,
+    isoDate: instant.toISOString(),
+    dateLabel: PT_DATE_FORMATTER.format(instant),
+    timeLabel: `${PT_TIME_LABEL_FORMATTER.format(instant)} PT`,
+  };
+}
+
+function buildBlankGameDraft() {
+  return {
+    isoDate: "",
+    dateLabel: "Date TBD",
+    timeLabel: "Time TBD",
+    dateTbd: true,
+    location: "Blackhawk Country Club",
+    opponent: "New matchup",
+    matchStatus: "scheduled",
+    teamScore: null,
+    opponentScore: null,
   };
 }
 
 function createGameId(dateValue, opponent, location) {
+  const safeDateValue = (dateValue || "tbd").trim() || "tbd";
   const slugSource = `${opponent}-${location}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 32);
   const suffix = Math.random().toString(36).slice(2, 8);
-  return `${dateValue}-${slugSource || "game"}-${suffix}`;
+  return `${safeDateValue}-${slugSource || "game"}-${suffix}`;
 }
 
 function normalizePlayer(docSnapshot) {
@@ -528,67 +534,39 @@ function normalizePlayer(docSnapshot) {
     lastName,
     fullName: data.fullName ?? buildFullName(firstName, lastName),
     active: data.active !== false,
-    legacyNames: data.legacyNames ?? [],
+    legacyNames: normalizeStringArray(data.legacyNames),
   };
 }
 
 function normalizeGame(docSnapshot) {
   const data = docSnapshot.data();
+  const rosterPlayerIds = normalizeStringArray(data.rosterPlayerIds);
+  const teamScore = normalizeNullableNumber(data.teamScore);
+  const opponentScore = normalizeNullableNumber(data.opponentScore);
+  const matchStatus = normalizeMatchStatus(data.matchStatus);
+  const dateTbd = data.dateTbd === true || (!data.isoDate && data.dateLabel === "Date TBD");
+
   return {
     id: docSnapshot.id,
-    dateLabel: data.dateLabel ?? "Game Date",
+    dateLabel: data.dateLabel ?? (dateTbd ? "Date TBD" : "Game Date"),
     isoDate: data.isoDate ?? "",
-    timeLabel: data.timeLabel ?? "10:00 AM PT",
+    timeLabel: data.timeLabel ?? (dateTbd ? "Time TBD" : "10:00 AM PT"),
+    dateTbd,
     location: data.location ?? "Location TBD",
     opponent: data.opponent ?? "Team Session",
     attendance: data.attendance ?? {},
+    rosterPlayerIds,
+    matchStatus,
+    teamScore,
+    opponentScore,
+    result: data.result ?? deriveMatchResult(matchStatus, teamScore, opponentScore),
   };
 }
 
-function renderPlayerSelect() {
-  const activePlayers = getActivePlayers();
-  playerSelect.innerHTML = "";
-
-  const defaultOption = document.createElement("option");
-  defaultOption.value = "";
-  defaultOption.textContent = activePlayers.length ? "Select your name" : "No active players yet";
-  playerSelect.append(defaultOption);
-
-  activePlayers.forEach((player) => {
-    const option = document.createElement("option");
-    option.value = player.id;
-    option.textContent = player.fullName;
-    if (player.id === selectedPlayerId) {
-      option.selected = true;
-    }
-    playerSelect.append(option);
-  });
-
-  if (selectedPlayerId && !getPlayerById(selectedPlayerId)?.active) {
-    selectedPlayerId = "";
-  }
-
-  const selectedPlayer = getPlayerById(selectedPlayerId);
-  selectedPlayerName.textContent = selectedPlayer?.fullName ?? "None selected";
-  playersCount.textContent = String(activePlayers.length);
-}
-
-function getStatusMeta(status) {
-  if (status === "in") {
-    return { label: "Available", className: "status-badge status-badge--in" };
-  }
-
-  if (status === "out") {
-    return { label: "Unavailable", className: "status-badge status-badge--out" };
-  }
-
-  return { label: "No response", className: "status-badge" };
-}
-
-function buildSummary(game) {
+function buildSummary(game, playerList = getActivePlayers()) {
   const counts = { in: 0, out: 0, unknown: 0 };
 
-  getActivePlayers().forEach((player) => {
+  playerList.forEach((player) => {
     const status = getAttendanceStatus(game, player);
     if (status === "in") {
       counts.in += 1;
@@ -602,18 +580,54 @@ function buildSummary(game) {
   return counts;
 }
 
+function getRosterPlayerIds(game) {
+  return normalizeStringArray(game.rosterPlayerIds);
+}
+
+function getRosterPlayers(game) {
+  return getRosterPlayerIds(game).map((playerId) => ({
+    id: playerId,
+    fullName: getPlayerNameById(playerId),
+  }));
+}
+
+function buildRosterStatusChipMeta(status) {
+  if (status === "in") {
+    return {
+      chipClassName: "roster-chip--status-in",
+      chipPrefix: "✓ ",
+    };
+  }
+
+  if (status === "out") {
+    return {
+      chipClassName: "roster-chip--status-out",
+      chipPrefix: "- ",
+    };
+  }
+
+  return {
+    chipClassName: "roster-chip--status-unknown",
+    chipPrefix: "? ",
+  };
+}
+
 function getNextUpcomingFromSortedList(sortedList) {
   if (!sortedList.length) {
     return null;
   }
 
   const todayKey = pacificDateKeyFromUtcMs(Date.now());
-
   for (let i = 0; i < sortedList.length; i += 1) {
     const gameDateKey = pacificDateKeyFromIso(sortedList[i].isoDate);
     if (gameDateKey && gameDateKey >= todayKey) {
       return sortedList[i];
     }
+  }
+
+  const firstTbdGame = sortedList.find((game) => game.dateTbd);
+  if (firstTbdGame) {
+    return firstTbdGame;
   }
 
   return sortedList[sortedList.length - 1];
@@ -625,21 +639,21 @@ function findNextUpcomingGameIndex() {
   }
 
   const todayKey = pacificDateKeyFromUtcMs(Date.now());
-  const idx = games.findIndex((g) => {
-    const gameDateKey = pacificDateKeyFromIso(g.isoDate);
+  const index = games.findIndex((game) => {
+    const gameDateKey = pacificDateKeyFromIso(game.isoDate);
     return gameDateKey && gameDateKey >= todayKey;
   });
 
-  if (idx === -1) {
-    return games.length - 1;
+  if (index !== -1) {
+    return index;
   }
 
-  return idx;
+  const firstTbdIndex = games.findIndex((game) => game.dateTbd);
+  return firstTbdIndex === -1 ? games.length - 1 : firstTbdIndex;
 }
 
 function syncGameBoardIndex() {
-  const signature = games.map((g) => g.id).join("\n");
-
+  const signature = games.map((game) => game.id).join("\n");
   if (signature !== lastGamesSignature) {
     lastGamesSignature = signature;
     gameBoardIndex = findNextUpcomingGameIndex();
@@ -656,59 +670,255 @@ function syncGameBoardIndex() {
   }
 }
 
-function buildGameCardElement(game, activePlayers) {
-  const cardFragment = gameTemplate.content.cloneNode(true);
-  const card = cardFragment.querySelector(".game-card");
-  const dateNode = cardFragment.querySelector(".game-card__date");
-  const titleNode = cardFragment.querySelector(".game-card__title");
-  const metaNode = cardFragment.querySelector(".game-card__meta");
-  const inCountNode = cardFragment.querySelector('[data-role="in-count"]');
-  const outCountNode = cardFragment.querySelector('[data-role="out-count"]');
-  const pendingCountNode = cardFragment.querySelector('[data-role="pending-count"]');
-  const playerListNode = cardFragment.querySelector('[data-role="player-list"]');
+function syncRosterBoardIndex() {
+  const signature = games.map((game) => game.id).join("\n");
+  if (signature !== lastRosterSignature) {
+    lastRosterSignature = signature;
+    rosterBoardIndex = findNextUpcomingGameIndex();
+    return;
+  }
 
-  const summary = buildSummary(game);
+  if (!games.length) {
+    rosterBoardIndex = 0;
+    return;
+  }
 
-  dateNode.textContent = game.dateLabel;
-  titleNode.textContent = game.opponent;
-  metaNode.textContent = `${game.timeLabel} • ${game.location}`;
-  inCountNode.textContent = String(summary.in);
-  outCountNode.textContent = String(summary.out);
-  pendingCountNode.textContent = String(summary.unknown);
+  if (rosterBoardIndex < 0 || rosterBoardIndex >= games.length) {
+    rosterBoardIndex = findNextUpcomingGameIndex();
+  }
+}
+
+function syncGameAdminIndex() {
+  const signature = games.map((game) => game.id).join("\n");
+  if (signature !== lastGamesAdminSignature) {
+    lastGamesAdminSignature = signature;
+    gameAdminIndex = 0;
+    return;
+  }
+
+  if (!games.length) {
+    gameAdminIndex = 0;
+    return;
+  }
+
+  if (gameAdminIndex < 0 || gameAdminIndex >= games.length) {
+    gameAdminIndex = 0;
+  }
+}
+
+function syncPlayerAdminIndex() {
+  const signature = players.map((player) => player.id).join("\n");
+  if (signature !== lastPlayersSignature) {
+    lastPlayersSignature = signature;
+    playerAdminIndex = 0;
+    return;
+  }
+
+  if (!players.length) {
+    playerAdminIndex = 0;
+    return;
+  }
+
+  if (playerAdminIndex < 0 || playerAdminIndex >= players.length) {
+    playerAdminIndex = 0;
+  }
+}
+
+function getStatusMeta(status) {
+  if (status === "in") {
+    return { label: "Available", className: "status-badge status-badge--in" };
+  }
+  if (status === "out") {
+    return { label: "Unavailable", className: "status-badge status-badge--out" };
+  }
+  return { label: "No response", className: "status-badge" };
+}
+
+function createRosterGroup(title, players, emptyMessage, options = {}) {
+  const group = document.createElement("section");
+  group.className = "roster-group";
+
+  const titleNode = document.createElement("h4");
+  titleNode.className = "roster-group__title";
+  titleNode.textContent = title;
+  group.append(titleNode);
+
+  const list = document.createElement("div");
+  list.className = "roster-group__list";
+
+  if (players.length) {
+    players.forEach((player) => {
+      const chip = document.createElement(options.interactive ? "button" : "span");
+      chip.className = `roster-chip ${options.chipClassName ?? ""}`.trim();
+      if (player.chipClassName) {
+        chip.classList.add(player.chipClassName);
+      }
+      chip.textContent = `${player.chipPrefix ?? ""}${player.fullName}`;
+      if (options.interactive) {
+        chip.type = "button";
+        chip.classList.add("roster-chip--button");
+        chip.disabled = Boolean(options.disabled);
+        chip.addEventListener("click", () => {
+          options.onChipClick?.(player);
+        });
+      }
+      list.append(chip);
+    });
+  } else {
+    const emptyChip = document.createElement("span");
+    emptyChip.className = "roster-chip roster-chip--empty";
+    emptyChip.textContent = emptyMessage;
+    list.append(emptyChip);
+  }
+
+  group.append(list);
+  return group;
+}
+
+function sortPlayersByName(playerList) {
+  return [...playerList].sort((left, right) => left.fullName.localeCompare(right.fullName));
+}
+
+function getGameBadgeMeta(game) {
+  if (game.dateTbd) {
+    return { label: "TBD", className: "game-card__badge game-card__badge--muted" };
+  }
+
+  const todayKey = pacificDateKeyFromUtcMs(Date.now());
+  const gameDateKey = pacificDateKeyFromIso(game.isoDate);
+
+  if (game.matchStatus === "completed") {
+    if (game.result === "win") {
+      return { label: "Win", className: "game-card__badge game-card__badge--win" };
+    }
+    if (game.result === "loss") {
+      return { label: "Loss", className: "game-card__badge game-card__badge--loss" };
+    }
+    if (game.result === "tie") {
+      return { label: "Tie", className: "game-card__badge game-card__badge--tie" };
+    }
+    return { label: "Completed", className: "game-card__badge game-card__badge--muted" };
+  }
+
+  if (gameDateKey && gameDateKey === todayKey) {
+    return { label: "Today", className: "game-card__badge game-card__badge--today" };
+  }
+
+  if (gameDateKey && gameDateKey < todayKey) {
+    return { label: "Past", className: "game-card__badge game-card__badge--muted" };
+  }
+
+  return { label: "Upcoming", className: "game-card__badge" };
+}
+
+function compareGamesForDisplay(left, right) {
+  if (left.dateTbd !== right.dateTbd) {
+    return left.dateTbd ? 1 : -1;
+  }
+
+  if (left.dateTbd && right.dateTbd) {
+    const opponentCompare = left.opponent.localeCompare(right.opponent);
+    if (opponentCompare !== 0) {
+      return opponentCompare;
+    }
+    return left.location.localeCompare(right.location);
+  }
+
+  return left.isoDate.localeCompare(right.isoDate);
+}
+
+function renderPlayerSelect() {
+  const activePlayers = getActivePlayers();
+  playerSelect.innerHTML = "";
+
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = activePlayers.length ? "Select your name" : "No active players yet";
+  playerSelect.append(defaultOption);
+
+  activePlayers.forEach((player) => {
+    const option = document.createElement("option");
+    option.value = player.id;
+    option.textContent = player.fullName;
+    option.selected = player.id === selectedPlayerId;
+    playerSelect.append(option);
+  });
+
+  if (selectedPlayerId && !getPlayerById(selectedPlayerId)?.active) {
+    selectedPlayerId = "";
+  }
+
+  const selectedPlayer = getPlayerById(selectedPlayerId);
+  if (selectedPlayerName) {
+    selectedPlayerName.textContent = selectedPlayer?.fullName ?? "None selected";
+  }
+  playersCount.textContent = String(activePlayers.length);
+}
+
+function buildScheduleCardElement(game) {
+  const fragment = scheduleCardTemplate.content.cloneNode(true);
+
+  fragment.querySelector('[data-role="schedule-date"]').textContent = game.dateLabel;
+  fragment.querySelector('[data-role="schedule-title"]').textContent = game.opponent;
+  fragment.querySelector('[data-role="schedule-meta"]').textContent = `${game.timeLabel} • ${game.location}`;
+
+  return fragment;
+}
+
+function buildAvailabilityCardElement(game, activePlayers) {
+  const fragment = availabilityCardTemplate.content.cloneNode(true);
+  const badge = getGameBadgeMeta(game);
+  const summary = buildSummary(game, activePlayers);
+  const badgeNode = fragment.querySelector('[data-role="availability-badge"]');
+  const playerListNode = fragment.querySelector('[data-role="player-list"]');
+  const availabilityLocked = game.dateTbd === true;
+
+  fragment.querySelector(".game-card__date").textContent = game.dateLabel;
+  fragment.querySelector(".game-card__title").textContent = game.opponent;
+  fragment.querySelector(".game-card__meta").textContent = `${game.timeLabel} • ${game.location}`;
+  badgeNode.textContent = badge.label;
+  badgeNode.className = badge.className;
+  fragment.querySelector('[data-role="in-count"]').textContent = String(summary.in);
+  fragment.querySelector('[data-role="out-count"]').textContent = String(summary.out);
+  fragment.querySelector('[data-role="pending-count"]').textContent = String(summary.unknown);
 
   activePlayers.forEach((player) => {
     const rowFragment = playerTemplate.content.cloneNode(true);
     const row = rowFragment.querySelector(".player-row");
     const nameNode = rowFragment.querySelector(".player-row__name");
-    const badgeNode = rowFragment.querySelector(".player-row__badge");
+    const badgeNodeInner = rowFragment.querySelector(".player-row__badge");
     const actionsNode = rowFragment.querySelector('[data-role="player-actions"]');
     const status = getAttendanceStatus(game, player);
-    const meta = getStatusMeta(status);
+    const statusMeta = getStatusMeta(status);
     const isSelected = selectedPlayerId && selectedPlayerId === player.id;
 
     nameNode.textContent = player.fullName;
-    badgeNode.textContent = meta.label;
-    badgeNode.className = meta.className;
+    badgeNodeInner.textContent = statusMeta.label;
+    badgeNodeInner.className = statusMeta.className;
 
     if (isSelected) {
       row.classList.add("player-row--selected");
-      badgeNode.classList.add("status-badge--selected");
+      badgeNodeInner.classList.add("status-badge--selected");
     }
 
     actionsNode.querySelectorAll("button").forEach((button) => {
       const buttonStatus = button.dataset.status;
-
       if (buttonStatus === status) {
         button.classList.add("action-btn--active");
       }
-
-      button.disabled = savingState;
+      button.disabled = savingState || availabilityLocked;
+      if (availabilityLocked) {
+        button.title = "Availability opens once the matchup date and time are set.";
+      }
       button.addEventListener("click", async () => {
         if (!selectedPlayerId) {
-          setStatus("Select your name first so you can update your attendance.", "warning");
+          setStatus("Select your name first so you can update your availability.", "warning");
           return;
         }
-
+        if (availabilityLocked) {
+          setStatus("Availability is locked for this matchup until the date and time are set.", "warning");
+          return;
+        }
         await updateAttendance(game.id, selectedPlayerId, buttonStatus);
       });
     });
@@ -720,14 +930,185 @@ function buildGameCardElement(game, activePlayers) {
     playerListNode.append(rowFragment);
   });
 
+  return fragment;
+}
+
+function buildRosterCardElement(game) {
+  const fragment = rosterCardTemplate.content.cloneNode(true);
+  const badge = getGameBadgeMeta(game);
+  const activePlayers = getActivePlayers();
+  const summary = buildSummary(game, activePlayers);
+  const rosterPlayerIds = getRosterPlayerIds(game);
+  const toggleListNode = fragment.querySelector('[data-role="roster-toggle-list"]');
+  const selectedNode = fragment.querySelector('[data-role="roster-selected"]');
+  const helperNode = fragment.querySelector('[data-role="roster-helper"]');
+
+  fragment.querySelector('[data-role="roster-date"]').textContent = game.dateLabel;
+  fragment.querySelector('[data-role="roster-title"]').textContent = game.opponent;
+  fragment.querySelector('[data-role="roster-meta"]').textContent = `${game.timeLabel} • ${game.location}`;
+  fragment.querySelector('[data-role="roster-selected-count"]').textContent = String(rosterPlayerIds.length);
+  fragment.querySelector('[data-role="roster-in-count"]').textContent = String(summary.in);
+  fragment.querySelector('[data-role="roster-pending-count"]').textContent = String(summary.unknown);
+
+  const badgeNode = fragment.querySelector('[data-role="roster-badge"]');
+  badgeNode.textContent = badge.label;
+  badgeNode.className = badge.className;
+
+  helperNode.textContent = isApprovedAdmin
+    ? "Tap a player to move them between Playing and Not playing this match."
+    : "See who is playing in this matchup and who is not playing.";
+
+  const playingPlayers = sortPlayersByName(
+    rosterPlayerIds.map((playerId) => {
+      const player = getPlayerById(playerId);
+      const availabilityStatus = player ? getAttendanceStatus(game, player) : "unknown";
+      return {
+        id: playerId,
+        fullName: player?.fullName ?? "Former player",
+        availabilityStatus,
+        ...buildRosterStatusChipMeta(availabilityStatus),
+      };
+    }),
+  );
+
+  const benchPlayers = sortPlayersByName(
+    activePlayers
+      .filter((player) => !rosterPlayerIds.includes(player.id))
+      .map((player) => {
+        const availabilityStatus = getAttendanceStatus(game, player);
+        return {
+          id: player.id,
+          fullName: player.fullName,
+          availabilityStatus,
+          ...buildRosterStatusChipMeta(availabilityStatus),
+        };
+      }),
+  );
+
+  if (!activePlayers.length) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "games-grid__empty";
+    emptyState.textContent = "No active players are available to assign yet.";
+    selectedNode.append(emptyState);
+    toggleListNode.hidden = true;
+    return fragment;
+  }
+
+  const playingGroup = createRosterGroup("Playing", playingPlayers, "Roster has not been set yet", {
+    interactive: isApprovedAdmin,
+    disabled: savingState,
+    onChipClick: async (player) => {
+      await updateGameRoster(
+        game.id,
+        rosterPlayerIds.filter((playerId) => playerId !== player.id),
+      );
+    },
+  });
+
+  const notPlayingGroup = createRosterGroup(
+    "Not playing this match",
+    benchPlayers,
+    "Everyone is currently playing",
+    {
+      interactive: isApprovedAdmin,
+      disabled: savingState,
+      onChipClick: async (player) => {
+        await updateGameRoster(game.id, [...rosterPlayerIds, player.id]);
+      },
+    },
+  );
+
+  selectedNode.append(playingGroup, notPlayingGroup);
+  toggleListNode.hidden = true;
+
+  return fragment;
+}
+
+function createStandingCard(title, body, meta = "") {
+  const card = document.createElement("article");
+  card.className = "game-card standing-card";
+
+  const titleNode = document.createElement("h3");
+  titleNode.className = "standing-card__title";
+  titleNode.textContent = title;
+
+  const bodyNode = document.createElement("p");
+  bodyNode.className = "standing-card__body";
+  bodyNode.textContent = body;
+
+  card.append(titleNode, bodyNode);
+
+  if (meta) {
+    const metaNode = document.createElement("p");
+    metaNode.className = "standing-card__meta";
+    metaNode.textContent = meta;
+    card.append(metaNode);
+  }
+
   return card;
 }
 
-function updateGamesPager() {
-  if (!gamesPager || !gamesPagerLabel || !gamesPrev || !gamesNext) {
+function buildTeamStandingRows() {
+  const rows = new Map();
+
+  games.forEach((game) => {
+    if (game.matchStatus !== "completed" || game.result === "pending") {
+      return;
+    }
+
+    const key = game.opponent || "Unknown opponent";
+    const row = rows.get(key) ?? {
+      opponent: key,
+      wins: 0,
+      losses: 0,
+      ties: 0,
+      matches: 0,
+      pointsFor: 0,
+      pointsAgainst: 0,
+    };
+
+    row.matches += 1;
+    if (game.result === "win") {
+      row.wins += 1;
+    } else if (game.result === "loss") {
+      row.losses += 1;
+    } else if (game.result === "tie") {
+      row.ties += 1;
+    }
+
+    row.pointsFor += game.teamScore ?? 0;
+    row.pointsAgainst += game.opponentScore ?? 0;
+    rows.set(key, row);
+  });
+
+  return Array.from(rows.values()).sort((left, right) => {
+    if (right.wins !== left.wins) {
+      return right.wins - left.wins;
+    }
+    if (left.losses !== right.losses) {
+      return left.losses - right.losses;
+    }
+    return left.opponent.localeCompare(right.opponent);
+  });
+}
+
+function renderScheduleView() {
+  scheduleGrid.innerHTML = "";
+
+  if (!games.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No matchups are scheduled yet.";
+    scheduleGrid.append(empty);
     return;
   }
 
+  games.forEach((game) => {
+    scheduleGrid.append(buildScheduleCardElement(game));
+  });
+}
+
+function updateGamesPager() {
   const total = games.length;
 
   if (total <= 1 || !selectedPlayerId) {
@@ -736,53 +1117,111 @@ function updateGamesPager() {
   }
 
   gamesPager.classList.remove("is-hidden");
-  gamesPagerLabel.textContent = `Game ${gameBoardIndex + 1} of ${total}`;
+  gamesPagerLabel.textContent = `Matchup ${gameBoardIndex + 1} of ${total}`;
   gamesPrev.disabled = gameBoardIndex <= 0 || savingState;
   gamesNext.disabled = gameBoardIndex >= total - 1 || savingState;
 }
 
-async function seedPlayersIfNeeded() {
-  const snapshot = await getDocs(collection(db, "players"));
-  if (!snapshot.empty) {
+function updateRosterPager() {
+  const total = games.length;
+
+  if (total <= 1) {
+    rosterPager.classList.add("is-hidden");
     return;
   }
 
-  const writes = INITIAL_PLAYERS.map((player) =>
-    setDoc(doc(db, "players", player.id), {
-      ...player,
-      fullName: buildFullName(player.firstName, player.lastName),
-      legacyNames: [buildFullName(player.firstName, player.lastName)],
-      active: true,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }),
-  );
-
-  await Promise.all(writes);
+  rosterPager.classList.remove("is-hidden");
+  rosterPagerLabel.textContent = `Matchup ${rosterBoardIndex + 1} of ${total}`;
+  rosterPrev.disabled = rosterBoardIndex <= 0 || savingState;
+  rosterNext.disabled = rosterBoardIndex >= total - 1 || savingState;
 }
 
-async function seedGamesIfNeeded() {
-  const snapshot = await getDocs(collection(db, "games"));
-  if (!snapshot.empty) {
+function renderAvailabilityView() {
+  syncGameBoardIndex();
+  gamesGrid.innerHTML = "";
+  const activePlayers = getActivePlayers();
+
+  if (!games.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No matchups are scheduled yet.";
+    gamesGrid.append(empty);
+    updateGamesPager();
     return;
   }
 
-  const seedPlayers = getActivePlayers().length
-    ? getActivePlayers()
-    : INITIAL_PLAYERS.map((player) => ({
-        id: player.id,
-      }));
+  if (!activePlayers.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No active players are on the roster yet. An admin can add players in Admin.";
+    gamesGrid.append(empty);
+    updateGamesPager();
+    return;
+  }
 
-  const writes = MOCK_GAMES.map((game) =>
-    setDoc(doc(db, "games", game.id), {
-      ...game,
-      attendance: createDefaultAttendance(seedPlayers),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }),
+  if (!selectedPlayerId) {
+    updateGamesPager();
+    return;
+  }
+
+  gamesGrid.append(buildAvailabilityCardElement(games[gameBoardIndex], activePlayers));
+  updateGamesPager();
+}
+
+function renderRosterView() {
+  syncRosterBoardIndex();
+  rosterGrid.innerHTML = "";
+
+  if (rosterViewEyebrow && rosterViewCopy) {
+    rosterViewEyebrow.textContent = isApprovedAdmin ? "Captain view" : "Team view";
+    rosterViewCopy.textContent = isApprovedAdmin
+      ? "Choose which active players are in for each matchup."
+      : "See who is playing in each matchup and who is not playing.";
+  }
+
+  if (!games.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No matchups are available for roster planning yet.";
+    rosterGrid.append(empty);
+    updateRosterPager();
+    return;
+  }
+
+  rosterGrid.append(buildRosterCardElement(games[rosterBoardIndex]));
+  updateRosterPager();
+}
+
+function renderTeamStandingView() {
+  teamStandingGrid.innerHTML = "";
+
+  const completedGames = games.filter((game) => game.matchStatus === "completed" && game.result !== "pending");
+  if (!completedGames.length) {
+    teamStandingNote.hidden = false;
+    return;
+  }
+
+  teamStandingNote.hidden = true;
+
+  const wins = completedGames.filter((game) => game.result === "win").length;
+  const losses = completedGames.filter((game) => game.result === "loss").length;
+  const ties = completedGames.filter((game) => game.result === "tie").length;
+  const winPct = completedGames.length ? ((wins + ties * 0.5) / completedGames.length).toFixed(3) : "0.000";
+
+  teamStandingGrid.append(
+    createStandingCard("Overall record", `${wins}-${losses}${ties ? `-${ties}` : ""}`, `${completedGames.length} completed matchups`),
+    createStandingCard("Win %", winPct, "Wins plus half ties over completed matchups"),
   );
 
-  await Promise.all(writes);
+  buildTeamStandingRows().forEach((row) => {
+    teamStandingGrid.append(
+      createStandingCard(
+        row.opponent,
+        `${row.wins}-${row.losses}${row.ties ? `-${row.ties}` : ""}`,
+        `PF ${row.pointsFor} • PA ${row.pointsAgainst}`,
+      ),
+    );
+  });
 }
 
 function buildAdminGameCard(game, options = {}) {
@@ -795,8 +1234,12 @@ function buildAdminGameCard(game, options = {}) {
   const actions = fragment.querySelector('[data-role="admin-actions"]');
   const dateInput = fragment.querySelector('[data-role="date-input"]');
   const timeInput = fragment.querySelector('[data-role="time-input"]');
+  const tbdInput = fragment.querySelector('[data-role="tbd-input"]');
   const locationInput = fragment.querySelector('[data-role="location-input"]');
   const opponentInput = fragment.querySelector('[data-role="opponent-input"]');
+  const statusInput = fragment.querySelector('[data-role="status-input"]');
+  const teamScoreInput = fragment.querySelector('[data-role="team-score-input"]');
+  const opponentScoreInput = fragment.querySelector('[data-role="opponent-score-input"]');
 
   title.textContent = options.title ?? game.opponent;
   meta.textContent = options.meta ?? `${game.dateLabel} • ${game.location}`;
@@ -804,12 +1247,30 @@ function buildAdminGameCard(game, options = {}) {
     badge.hidden = true;
   } else {
     badge.hidden = false;
-    badge.textContent = game.timeLabel;
+    badge.textContent = hasFinalScore(game) ? `Final ${game.teamScore}-${game.opponentScore}` : (game.dateTbd ? "TBD" : game.timeLabel);
   }
-  dateInput.value = game.isoDate ? game.isoDate.slice(0, 10) : "";
-  timeInput.value = pacificTimeInputValueFromIso(game.isoDate);
+
+  dateInput.value = game.dateTbd ? "" : (game.isoDate ? game.isoDate.slice(0, 10) : "");
+  timeInput.value = game.dateTbd ? "" : pacificTimeInputValueFromIso(game.isoDate);
+  tbdInput.checked = game.dateTbd === true;
   locationInput.value = game.location;
   opponentInput.value = game.opponent;
+  statusInput.value = game.matchStatus ?? "scheduled";
+  teamScoreInput.value = game.teamScore ?? "";
+  opponentScoreInput.value = game.opponentScore ?? "";
+
+  const syncTbdUi = () => {
+    const isTbd = tbdInput.checked;
+    dateInput.disabled = isTbd;
+    timeInput.disabled = isTbd;
+
+    if (!isTbd && !timeInput.value) {
+      timeInput.value = DEFAULT_NEW_GAME_TIME;
+    }
+  };
+
+  syncTbdUi();
+  tbdInput.addEventListener("change", syncTbdUi);
 
   return {
     card,
@@ -817,8 +1278,12 @@ function buildAdminGameCard(game, options = {}) {
     actions,
     dateInput,
     timeInput,
+    tbdInput,
     locationInput,
     opponentInput,
+    statusInput,
+    teamScoreInput,
+    opponentScoreInput,
   };
 }
 
@@ -848,30 +1313,7 @@ function buildAdminPlayerCard(player, options = {}) {
   };
 }
 
-function syncPlayerAdminIndex() {
-  const signature = players.map((player) => player.id).join("\n");
-
-  if (signature !== lastPlayersSignature) {
-    lastPlayersSignature = signature;
-    playerAdminIndex = 0;
-    return;
-  }
-
-  if (!players.length) {
-    playerAdminIndex = 0;
-    return;
-  }
-
-  if (playerAdminIndex < 0 || playerAdminIndex >= players.length) {
-    playerAdminIndex = 0;
-  }
-}
-
 function updatePlayersAdminPager() {
-  if (!playersAdminPager || !playersAdminPagerLabel || !playersAdminPrev || !playersAdminNext) {
-    return;
-  }
-
   const total = players.length;
 
   if (total <= 1 || !isApprovedAdmin) {
@@ -930,6 +1372,10 @@ function renderPlayersAdminControls() {
   playersAdminGrid.innerHTML = "";
 
   if (!isApprovedAdmin) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "Sign in with an approved admin account to manage the roster.";
+    playersAdminGrid.append(empty);
     updatePlayersAdminPager();
     return;
   }
@@ -968,42 +1414,16 @@ function renderPlayersAdminControls() {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
     empty.textContent = "No players are loaded yet. Use the card above to create the first player.";
-    playersAdminGrid.append(empty);
-    playersAdminGrid.append(createCard.card);
+    playersAdminGrid.append(empty, createCard.card);
     updatePlayersAdminPager();
     return;
   }
 
-  const player = players[playerAdminIndex];
-  playersAdminGrid.append(buildExistingPlayerAdminCard(player));
-  playersAdminGrid.append(createCard.card);
+  playersAdminGrid.append(buildExistingPlayerAdminCard(players[playerAdminIndex]), createCard.card);
   updatePlayersAdminPager();
 }
 
-function syncGameAdminIndex() {
-  const signature = games.map((game) => game.id).join("\n");
-
-  if (signature !== lastGamesAdminSignature) {
-    lastGamesAdminSignature = signature;
-    gameAdminIndex = 0;
-    return;
-  }
-
-  if (!games.length) {
-    gameAdminIndex = 0;
-    return;
-  }
-
-  if (gameAdminIndex < 0 || gameAdminIndex >= games.length) {
-    gameAdminIndex = 0;
-  }
-}
-
 function updateGamesAdminPager() {
-  if (!adminGamesPager || !adminGamesPagerLabel || !adminGamesPrev || !adminGamesNext) {
-    return;
-  }
-
   const total = games.length;
 
   if (total <= 1 || !isApprovedAdmin) {
@@ -1012,7 +1432,7 @@ function updateGamesAdminPager() {
   }
 
   adminGamesPager.classList.remove("is-hidden");
-  adminGamesPagerLabel.textContent = `Game ${gameAdminIndex + 1} of ${total}`;
+  adminGamesPagerLabel.textContent = `Matchup ${gameAdminIndex + 1} of ${total}`;
   adminGamesPrev.disabled = gameAdminIndex <= 0 || savingState;
   adminGamesNext.disabled = gameAdminIndex >= total - 1 || savingState;
 }
@@ -1026,10 +1446,16 @@ function buildExistingGameAdminCard(game) {
   resetButton.textContent = "Reset";
   resetButton.disabled = savingState;
   resetButton.addEventListener("click", () => {
-    adminCard.dateInput.value = game.isoDate.slice(0, 10);
-    adminCard.timeInput.value = pacificTimeInputValueFromIso(game.isoDate);
+    adminCard.dateInput.value = game.dateTbd ? "" : game.isoDate.slice(0, 10);
+    adminCard.timeInput.value = game.dateTbd ? "" : pacificTimeInputValueFromIso(game.isoDate);
+    adminCard.tbdInput.checked = game.dateTbd === true;
+    adminCard.dateInput.disabled = game.dateTbd === true;
+    adminCard.timeInput.disabled = game.dateTbd === true;
     adminCard.locationInput.value = game.location;
     adminCard.opponentInput.value = game.opponent;
+    adminCard.statusInput.value = game.matchStatus;
+    adminCard.teamScoreInput.value = game.teamScore ?? "";
+    adminCard.opponentScoreInput.value = game.opponentScore ?? "";
   });
 
   const saveButton = document.createElement("button");
@@ -1048,7 +1474,6 @@ function buildExistingGameAdminCard(game) {
     if (!confirmed) {
       return;
     }
-
     await deleteGame(game.id, game.opponent);
   });
 
@@ -1058,8 +1483,12 @@ function buildExistingGameAdminCard(game) {
     await updateGameDetails(game.id, {
       scheduledDate: adminCard.dateInput.value,
       scheduledTime: adminCard.timeInput.value,
+      dateTbd: adminCard.tbdInput.checked,
       location: adminCard.locationInput.value.trim(),
       opponent: adminCard.opponentInput.value.trim(),
+      matchStatus: adminCard.statusInput.value,
+      teamScore: adminCard.teamScoreInput.value,
+      opponentScore: adminCard.opponentScoreInput.value,
     });
   });
 
@@ -1071,31 +1500,26 @@ function renderGamesAdminControls() {
   adminGrid.innerHTML = "";
 
   if (!isApprovedAdmin) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "Sign in with an approved admin account to manage matchups and scores.";
+    adminGrid.append(empty);
     updateGamesAdminPager();
     return;
   }
 
-  const createCard = buildAdminGameCard(
-    {
-      isoDate: MOCK_GAMES[0].isoDate,
-      location: "Blackhawk Country Club",
-      opponent: "VS.",
-      timeLabel: "10:00 AM PT",
-      dateLabel: MOCK_GAMES[0].dateLabel,
-    },
-    {
-      title: "Create new game",
-      meta: "Add a new game date to the live schedule.",
-      hideBadge: true,
-    },
-  );
+  const createCard = buildAdminGameCard(buildBlankGameDraft(), {
+    title: "Create matchup",
+    meta: "Add a new matchup to the live team schedule.",
+    hideBadge: true,
+  });
 
   createCard.card.classList.add("admin-card--create");
 
   const createButton = document.createElement("button");
   createButton.type = "submit";
   createButton.className = "action-btn action-btn--active";
-  createButton.textContent = "Create game";
+  createButton.textContent = "Create matchup";
   createButton.disabled = savingState;
 
   createCard.actions.append(createButton);
@@ -1104,63 +1528,109 @@ function renderGamesAdminControls() {
     await createGame({
       scheduledDate: createCard.dateInput.value,
       scheduledTime: createCard.timeInput.value,
+      dateTbd: createCard.tbdInput.checked,
       location: createCard.locationInput.value.trim(),
       opponent: createCard.opponentInput.value.trim(),
+      matchStatus: createCard.statusInput.value,
+      teamScore: createCard.teamScoreInput.value,
+      opponentScore: createCard.opponentScoreInput.value,
     });
   });
 
   if (!games.length) {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
-    empty.textContent = "No games available to edit yet. Use the card above to create the first one.";
-    adminGrid.append(empty);
-    adminGrid.append(createCard.card);
+    empty.textContent = "No matchups are available to edit yet. Use the card above to create the first one.";
+    adminGrid.append(empty, createCard.card);
     updateGamesAdminPager();
     return;
   }
 
-  const game = games[gameAdminIndex];
-  adminGrid.append(buildExistingGameAdminCard(game));
-  adminGrid.append(createCard.card);
+  adminGrid.append(buildExistingGameAdminCard(games[gameAdminIndex]), createCard.card);
   updateGamesAdminPager();
 }
 
-function renderGames() {
-  syncGameBoardIndex();
-  gamesGrid.innerHTML = "";
+function buildGamePersistencePayload(updates) {
+  const scheduledDate = updates.scheduledDate;
+  const scheduledTime = updates.scheduledTime;
+  const dateTbd = updates.dateTbd === true;
+  const location = updates.location.trim();
+  const opponent = updates.opponent.trim();
 
-  const activePlayers = getActivePlayers();
-
-  if (!games.length) {
-    const empty = document.createElement("div");
-    empty.className = "games-grid__empty";
-    empty.textContent = "No games available yet.";
-    gamesGrid.append(empty);
-    updateGamesPager();
-    return;
+  if ((!dateTbd && (!scheduledDate || !scheduledTime)) || !location || !opponent) {
+    return { error: "Location and match label are required, and dated matchups need a date and time." };
   }
 
-  if (!activePlayers.length) {
-    const empty = document.createElement("div");
-    empty.className = "games-grid__empty";
-    empty.textContent = "No active players are on the roster yet. An admin can add players in the roster manager.";
-    gamesGrid.append(empty);
-    updateGamesPager();
-    return;
+  const teamScore = normalizeNullableNumber(updates.teamScore);
+  const opponentScore = normalizeNullableNumber(updates.opponentScore);
+  const scorePairIsIncomplete = (teamScore === null) !== (opponentScore === null);
+
+  if (scorePairIsIncomplete) {
+    return { error: "Enter both final scores or leave both score fields empty." };
   }
 
-  if (!selectedPlayerId) {
-    const empty = document.createElement("div");
-    empty.className = "games-grid__empty";
-    empty.textContent = "Select your name above to view the game board and update your availability.";
-    gamesGrid.append(empty);
-    updateGamesPager();
-    return;
+  const requestedStatus = normalizeMatchStatus(updates.matchStatus);
+  if (dateTbd && requestedStatus === "completed") {
+    return { error: "Set the real date and time before marking a matchup completed." };
+  }
+  if (requestedStatus === "completed" && (teamScore === null || opponentScore === null)) {
+    return { error: "Completed matchups need both final scores." };
   }
 
-  const game = games[gameBoardIndex];
-  gamesGrid.append(buildGameCardElement(game, activePlayers));
-  updateGamesPager();
+  const matchStatus =
+    requestedStatus === "completed" || (teamScore !== null && opponentScore !== null) ? "completed" : "scheduled";
+
+  return {
+    scheduledDate,
+    scheduledTime,
+    dateTbd,
+    location,
+    opponent,
+    matchStatus,
+    teamScore,
+    opponentScore,
+    result: deriveMatchResult(matchStatus, teamScore, opponentScore),
+  };
+}
+
+async function beginAdminSignIn() {
+  try {
+    lastAuthFlowEvent = "Trying popup sign-in flow";
+    refreshAdminSessionUi();
+    setAdminStatus("Opening Google sign-in...", "warning");
+    const result = await signInWithPopup(auth, googleProvider);
+    lastAuthFlowEvent = `Popup sign-in completed for ${result.user.email ?? "unknown email"}`;
+    refreshAdminSessionUi();
+  } catch (error) {
+    console.error(error);
+
+    const fallbackCodes = new Set([
+      "auth/popup-blocked",
+      "auth/popup-closed-by-user",
+      "auth/cancelled-popup-request",
+      "auth/operation-not-supported-in-this-environment",
+    ]);
+
+    if (fallbackCodes.has(error.code)) {
+      try {
+        lastAuthFlowEvent = `Popup failed with ${error.code}; falling back to redirect`;
+        refreshAdminSessionUi();
+        setAdminStatus("Sign-in popup was blocked. Trying redirect sign-in...", "warning");
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      } catch (redirectError) {
+        console.error(redirectError);
+        lastAuthFlowEvent = `Redirect fallback failed with ${redirectError.code ?? "unknown error"}`;
+        refreshAdminSessionUi();
+        setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
+        return;
+      }
+    }
+
+    lastAuthFlowEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
+    refreshAdminSessionUi();
+    setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
+  }
 }
 
 async function updateAttendance(gameId, playerId, status) {
@@ -1168,12 +1638,16 @@ async function updateAttendance(gameId, playerId, status) {
     return;
   }
 
+  const game = games.find((item) => item.id === gameId);
+  if (game?.dateTbd) {
+    setStatus("Availability is locked for this matchup until the date and time are set.", "warning");
+    return;
+  }
+
   savingState = true;
   const player = getPlayerById(playerId);
   setStatus(`Saving ${player?.fullName ?? "player"}'s response...`, "warning");
-  renderGames();
-  renderPlayersAdminControls();
-  renderGamesAdminControls();
+  renderApp();
 
   try {
     await updateDoc(doc(db, "games", gameId), {
@@ -1184,14 +1658,38 @@ async function updateAttendance(gameId, playerId, status) {
   } catch (error) {
     console.error(error);
     setStatus(
-      "Could not save attendance to Firebase. Check Firestore rules and that the site is served over HTTP/HTTPS.",
+      "Could not save availability to Firebase. Check Firestore rules and that the site is served over HTTP/HTTPS.",
       "error",
     );
   } finally {
     savingState = false;
-    renderGames();
-    renderPlayersAdminControls();
-    renderGamesAdminControls();
+    renderApp();
+  }
+}
+
+async function updateGameRoster(gameId, rosterPlayerIds) {
+  if (!isApprovedAdmin) {
+    setAdminStatus("Sign in first to update matchup rosters.", "error");
+    return;
+  }
+
+  savingState = true;
+  setAdminStatus("Saving roster selection...", "warning");
+  renderApp();
+
+  try {
+    await updateDoc(doc(db, "games", gameId), {
+      rosterPlayerIds: normalizeStringArray(rosterPlayerIds),
+      updatedAt: serverTimestamp(),
+      updatedByAdmin: normalizeEmail(adminUser?.email),
+    });
+    setAdminStatus("Roster selection saved.", "success");
+  } catch (error) {
+    console.error(error);
+    setAdminStatus("Could not save that roster selection right now.", "error");
+  } finally {
+    savingState = false;
+    renderApp();
   }
 }
 
@@ -1201,103 +1699,128 @@ async function updateGameDetails(gameId, updates) {
     return;
   }
 
-  if (!updates.scheduledDate || !updates.scheduledTime || !updates.location || !updates.opponent) {
-    setAdminStatus("Date, time, location, and match label are required.", "error");
+  const normalized = buildGamePersistencePayload(updates);
+  if (normalized.error) {
+    setAdminStatus(normalized.error, "error");
     return;
   }
 
   savingState = true;
-  setAdminStatus("Saving game details...", "success");
-  renderGames();
-  renderGamesAdminControls();
-  renderPlayersAdminControls();
+  setAdminStatus("Saving matchup details...", "warning");
+  renderApp();
 
   try {
     await updateDoc(doc(db, "games", gameId), {
-      ...buildScheduleFields(updates.scheduledDate, updates.scheduledTime),
-      location: updates.location,
-      opponent: updates.opponent,
+      ...(normalized.dateTbd
+        ? {
+            isoDate: "",
+            dateLabel: "Date TBD",
+            timeLabel: "Time TBD",
+            dateTbd: true,
+          }
+        : {
+            ...buildScheduleFields(normalized.scheduledDate, normalized.scheduledTime),
+            dateTbd: false,
+          }),
+      location: normalized.location,
+      opponent: normalized.opponent,
+      matchStatus: normalized.matchStatus,
+      teamScore: normalized.teamScore,
+      opponentScore: normalized.opponentScore,
+      result: normalized.result,
+      completedAt: normalized.matchStatus === "completed" ? serverTimestamp() : null,
+      completedByAdmin:
+        normalized.matchStatus === "completed" ? normalizeEmail(adminUser?.email) : null,
       updatedAt: serverTimestamp(),
       updatedByAdmin: normalizeEmail(adminUser?.email),
     });
-    setAdminStatus("Game details saved to Firebase.", "success");
+    setAdminStatus("Matchup details saved to Firebase.", "success");
   } catch (error) {
     console.error(error);
     setAdminStatus("Could not save those changes right now.", "error");
   } finally {
     savingState = false;
-    renderGames();
-    renderGamesAdminControls();
-    renderPlayersAdminControls();
+    renderApp();
   }
 }
 
 async function createGame(updates) {
   if (!isApprovedAdmin) {
-    setAdminStatus("Sign in first to add a game.", "error");
+    setAdminStatus("Sign in first to add a matchup.", "error");
     return;
   }
 
-  if (!updates.scheduledDate || !updates.scheduledTime || !updates.location || !updates.opponent) {
-    setAdminStatus("Date, time, location, and match label are required to create a game.", "error");
+  const normalized = buildGamePersistencePayload(updates);
+  if (normalized.error) {
+    setAdminStatus(normalized.error, "error");
     return;
   }
 
   savingState = true;
-  setAdminStatus("Creating game...", "success");
-  renderGames();
-  renderGamesAdminControls();
-  renderPlayersAdminControls();
+  setAdminStatus("Creating matchup...", "warning");
+  renderApp();
 
-  const gameId = createGameId(updates.scheduledDate, updates.opponent, updates.location);
+  const gameId = createGameId(normalized.scheduledDate, normalized.opponent, normalized.location);
 
   try {
     await setDoc(doc(db, "games", gameId), {
       id: gameId,
-      ...buildScheduleFields(updates.scheduledDate, updates.scheduledTime),
-      location: updates.location,
-      opponent: updates.opponent,
+      ...(normalized.dateTbd
+        ? {
+            isoDate: "",
+            dateLabel: "Date TBD",
+            timeLabel: "Time TBD",
+            dateTbd: true,
+          }
+        : {
+            ...buildScheduleFields(normalized.scheduledDate, normalized.scheduledTime),
+            dateTbd: false,
+          }),
+      location: normalized.location,
+      opponent: normalized.opponent,
       attendance: createDefaultAttendance(),
+      rosterPlayerIds: [],
+      matchStatus: normalized.matchStatus,
+      teamScore: normalized.teamScore,
+      opponentScore: normalized.opponentScore,
+      result: normalized.result,
+      completedAt: normalized.matchStatus === "completed" ? serverTimestamp() : null,
+      completedByAdmin:
+        normalized.matchStatus === "completed" ? normalizeEmail(adminUser?.email) : null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       createdByAdmin: normalizeEmail(adminUser?.email),
       updatedByAdmin: normalizeEmail(adminUser?.email),
     });
-    setAdminStatus("New game created.", "success");
+    setAdminStatus("New matchup created.", "success");
   } catch (error) {
     console.error(error);
-    setAdminStatus("Could not create that game right now.", "error");
+    setAdminStatus("Could not create that matchup right now.", "error");
   } finally {
     savingState = false;
-    renderGames();
-    renderGamesAdminControls();
-    renderPlayersAdminControls();
+    renderApp();
   }
 }
 
 async function deleteGame(gameId, gameName) {
   if (!isApprovedAdmin) {
-    setAdminStatus("Sign in first to delete a game.", "error");
+    setAdminStatus("Sign in first to delete a matchup.", "error");
     return;
   }
 
   savingState = true;
-  setAdminStatus(`Deleting ${gameName}...`, "success");
-  renderGames();
-  renderGamesAdminControls();
-  renderPlayersAdminControls();
+  setAdminStatus(`Deleting ${gameName}...`, "warning");
+  renderApp();
 
   try {
     await deleteDoc(doc(db, "games", gameId));
-    setAdminStatus("Game deleted.", "success");
+    setAdminStatus("Matchup deleted.", "success");
   } catch (error) {
     console.error(error);
-    setAdminStatus("Could not delete that game right now.", "error");
+    setAdminStatus("Could not delete that matchup right now.", "error");
   } finally {
     savingState = false;
-    renderGames();
-    renderGamesAdminControls();
-    renderPlayersAdminControls();
+    renderApp();
   }
 }
 
@@ -1317,10 +1840,8 @@ async function createPlayer(updates) {
   }
 
   savingState = true;
-  setAdminStatus("Creating player...", "success");
-  renderGames();
-  renderPlayersAdminControls();
-  renderGamesAdminControls();
+  setAdminStatus("Creating player...", "warning");
+  renderApp();
 
   try {
     const playerId = buildPlayerId(firstName, lastName);
@@ -1340,9 +1861,7 @@ async function createPlayer(updates) {
     setAdminStatus("Could not add that player right now.", "error");
   } finally {
     savingState = false;
-    renderGames();
-    renderPlayersAdminControls();
-    renderGamesAdminControls();
+    renderApp();
   }
 }
 
@@ -1362,10 +1881,8 @@ async function updatePlayer(player, updates) {
   }
 
   savingState = true;
-  setAdminStatus("Saving player details...", "success");
-  renderGames();
-  renderPlayersAdminControls();
-  renderGamesAdminControls();
+  setAdminStatus("Saving player details...", "warning");
+  renderApp();
 
   try {
     const legacyNames = Array.from(new Set([...(player.legacyNames ?? []), player.fullName, fullName]));
@@ -1384,9 +1901,7 @@ async function updatePlayer(player, updates) {
     setAdminStatus("Could not update that player right now.", "error");
   } finally {
     savingState = false;
-    renderGames();
-    renderPlayersAdminControls();
-    renderGamesAdminControls();
+    renderApp();
   }
 }
 
@@ -1397,10 +1912,8 @@ async function setPlayerActiveState(playerId, active, fullName) {
   }
 
   savingState = true;
-  setAdminStatus(`${active ? "Reactivating" : "Deactivating"} ${fullName}...`, "success");
-  renderGames();
-  renderPlayersAdminControls();
-  renderGamesAdminControls();
+  setAdminStatus(`${active ? "Reactivating" : "Deactivating"} ${fullName}...`, "warning");
+  renderApp();
 
   try {
     await updateDoc(doc(db, "players", playerId), {
@@ -1419,10 +1932,7 @@ async function setPlayerActiveState(playerId, active, fullName) {
     setAdminStatus("Could not update that player right now.", "error");
   } finally {
     savingState = false;
-    renderPlayerSelect();
-    renderGames();
-    renderPlayersAdminControls();
-    renderGamesAdminControls();
+    renderApp();
   }
 }
 
@@ -1452,21 +1962,13 @@ async function initializeAdminAuth() {
 
     if (isApprovedAdmin) {
       setAdminStatus(`Signed in as ${user.email}.`, "success");
-      try {
-        await seedPlayersIfNeeded();
-        await seedGamesIfNeeded();
-      } catch (error) {
-        console.error(error);
-        setAdminStatus("Signed in, but some team data could not be loaded.", "error");
-      }
     } else if (user) {
       setAdminStatus(`${user.email} is signed in, but it is not an approved admin account.`, "error");
     } else {
       setAdminStatus("Sign in to make changes.", "");
     }
 
-    renderPlayersAdminControls();
-    renderGamesAdminControls();
+    renderApp();
   });
 }
 
@@ -1484,10 +1986,7 @@ function bootstrapPlayersListener() {
           return left.firstName.localeCompare(right.firstName);
         });
 
-      renderPlayerSelect();
-      renderGames();
-      renderPlayersAdminControls();
-      renderGamesAdminControls();
+      renderApp();
     },
     (error) => {
       console.error(error);
@@ -1497,12 +1996,7 @@ function bootstrapPlayersListener() {
 }
 
 function bootstrapGamesListener() {
-  gamesCount.textContent = String(MOCK_GAMES.length);
-  const sortedMock = [...MOCK_GAMES].sort((a, b) => a.isoDate.localeCompare(b.isoDate));
-  const mockUpcoming = getNextUpcomingFromSortedList(sortedMock);
-  nextGame.textContent = mockUpcoming
-    ? `${mockUpcoming.dateLabel} • ${mockUpcoming.timeLabel}`
-    : "No games scheduled";
+  gamesCount.textContent = "0";
   setStatus("Connecting to Firebase and loading schedule...", "warning");
 
   onSnapshot(
@@ -1510,16 +2004,11 @@ function bootstrapGamesListener() {
     (snapshot) => {
       games = snapshot.docs
         .map(normalizeGame)
-        .sort((left, right) => left.isoDate.localeCompare(right.isoDate));
+        .sort(compareGamesForDisplay);
 
       gamesCount.textContent = String(games.length);
-      const upcoming = getNextUpcomingFromSortedList(games);
-      nextGame.textContent = upcoming
-        ? `${upcoming.dateLabel} • ${upcoming.timeLabel}`
-        : "No games scheduled";
-      setStatus("Live attendance is connected. Pick your name to update your availability.", "success");
-      renderGames();
-      renderGamesAdminControls();
+      setStatus("Live schedule connected. Availability and roster updates are ready.", "success");
+      renderApp();
     },
     (error) => {
       console.error(error);
@@ -1531,17 +2020,82 @@ function bootstrapGamesListener() {
   );
 }
 
+function renderApp() {
+  updateViewUi();
+  refreshAdminSessionUi();
+  renderPlayerSelect();
+  renderScheduleView();
+  renderAvailabilityView();
+  renderRosterView();
+  renderTeamStandingView();
+  renderPlayersAdminControls();
+  renderGamesAdminControls();
+}
+
+navToggle.addEventListener("click", () => {
+  setNavOpen(!navOpen);
+});
+
+navOverlay.addEventListener("click", () => {
+  setNavOpen(false);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && navOpen) {
+    setNavOpen(false);
+  }
+});
+
+navButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setActiveView(button.dataset.viewTarget);
+  });
+});
+
+adminSignIn.addEventListener("click", async () => {
+  await beginAdminSignIn();
+});
+
+adminSignOut.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    setAdminStatus("Signed out of admin access.", "");
+  } catch (error) {
+    console.error(error);
+    setAdminStatus("Could not sign out right now.", "error");
+  }
+});
+
+playerSelect.addEventListener("change", (event) => {
+  selectedPlayerId = event.target.value;
+  renderApp();
+});
+
 gamesPrev.addEventListener("click", () => {
   if (gameBoardIndex > 0) {
     gameBoardIndex -= 1;
-    renderGames();
+    renderAvailabilityView();
   }
 });
 
 gamesNext.addEventListener("click", () => {
   if (gameBoardIndex < games.length - 1) {
     gameBoardIndex += 1;
-    renderGames();
+    renderAvailabilityView();
+  }
+});
+
+rosterPrev.addEventListener("click", () => {
+  if (rosterBoardIndex > 0) {
+    rosterBoardIndex -= 1;
+    renderRosterView();
+  }
+});
+
+rosterNext.addEventListener("click", () => {
+  if (rosterBoardIndex < games.length - 1) {
+    rosterBoardIndex += 1;
+    renderRosterView();
   }
 });
 
@@ -1573,9 +2127,7 @@ playersAdminNext.addEventListener("click", () => {
   }
 });
 
-renderPlayerSelect();
-renderGames();
-refreshAdminSessionUi();
+renderApp();
 setAdminStatus("Sign in to make changes.", "");
 bootstrapPlayersListener();
 bootstrapGamesListener();
