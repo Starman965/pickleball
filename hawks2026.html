@@ -499,15 +499,24 @@
 
     <script>
       (function loadFreshAssets() {
-        const cacheBust = Date.now();
+        const appVersion = "2026-04-17-1";
+        const currentUrl = new URL(window.location.href);
+        const currentVersion = currentUrl.searchParams.get("v");
+
+        if (currentVersion !== appVersion) {
+          currentUrl.searchParams.set("v", appVersion);
+          window.location.replace(currentUrl.toString());
+          return;
+        }
+
         const stylesheet = document.createElement("link");
         stylesheet.rel = "stylesheet";
-        stylesheet.href = `./roster-styles.css?v=${cacheBust}`;
+        stylesheet.href = `./roster-styles.css?v=${appVersion}`;
         document.head.appendChild(stylesheet);
 
         const appScript = document.createElement("script");
         appScript.type = "module";
-        appScript.src = `./roster-app.js?v=${cacheBust}`;
+        appScript.src = `./roster-app.js?v=${appVersion}`;
         document.body.appendChild(appScript);
       })();
     </script>
