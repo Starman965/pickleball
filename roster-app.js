@@ -255,6 +255,10 @@ function getAttendanceStatus(game, player) {
 }
 
 function setStatus(message, tone = "") {
+  if (!statusBanner) {
+    return;
+  }
+
   statusBanner.textContent = message;
   statusBanner.className = "status-banner";
   if (tone === "warning" || tone === "error") {
@@ -265,6 +269,10 @@ function setStatus(message, tone = "") {
 }
 
 function setAdminStatus(message, tone = "") {
+  if (!adminStatus) {
+    return;
+  }
+
   adminStatus.textContent = message;
   adminStatus.className = "admin-status";
   if (tone === "warning" || tone === "error") {
@@ -275,9 +283,19 @@ function setAdminStatus(message, tone = "") {
 }
 
 function refreshAdminSessionUi() {
-  adminUserEmail.textContent = adminUser?.email ?? "Not signed in";
-  adminSignIn.hidden = Boolean(adminUser);
-  adminSignOut.hidden = !adminUser;
+  if (adminUserEmail) {
+    adminUserEmail.textContent = adminUser?.email ?? "Not signed in";
+  }
+  if (adminSignIn) {
+    adminSignIn.hidden = Boolean(adminUser);
+  }
+  if (adminSignOut) {
+    adminSignOut.hidden = !adminUser;
+  }
+
+  if (!adminHelperText) {
+    return;
+  }
 
   if (isApprovedAdmin) {
     adminHelperText.textContent = "";
@@ -292,9 +310,15 @@ function refreshAdminSessionUi() {
 function setNavOpen(nextOpen) {
   navOpen = nextOpen;
   document.body.classList.toggle("nav-open", navOpen);
-  sideNav.classList.toggle("is-open", navOpen);
-  navOverlay.hidden = !navOpen;
-  navToggle.setAttribute("aria-expanded", String(navOpen));
+  if (sideNav) {
+    sideNav.classList.toggle("is-open", navOpen);
+  }
+  if (navOverlay) {
+    navOverlay.hidden = !navOpen;
+  }
+  if (navToggle) {
+    navToggle.setAttribute("aria-expanded", String(navOpen));
+  }
 }
 
 function setActiveView(viewId) {
@@ -328,7 +352,9 @@ function syncAdminNavAccess() {
 function updateViewUi() {
   syncAdminNavAccess();
   const meta = VIEW_META[activeView];
-  topbarLabel.textContent = meta.label;
+  if (topbarLabel) {
+    topbarLabel.textContent = meta.label;
+  }
 
   if (heroStats) {
     const showStats = !["availability", "team", "roster"].includes(activeView);
@@ -835,19 +861,25 @@ function compareGamesForDisplay(left, right) {
 
 function renderPlayerSelect() {
   const activePlayers = getActivePlayers();
-  playerSelect.innerHTML = "";
+  if (playerSelect) {
+    playerSelect.innerHTML = "";
+  }
 
   const defaultOption = document.createElement("option");
   defaultOption.value = "";
   defaultOption.textContent = activePlayers.length ? "Select your name" : "No active players yet";
-  playerSelect.append(defaultOption);
+  if (playerSelect) {
+    playerSelect.append(defaultOption);
+  }
 
   activePlayers.forEach((player) => {
     const option = document.createElement("option");
     option.value = player.id;
     option.textContent = player.fullName;
     option.selected = player.id === selectedPlayerId;
-    playerSelect.append(option);
+    if (playerSelect) {
+      playerSelect.append(option);
+    }
   });
 
   if (selectedPlayerId && !getPlayerById(selectedPlayerId)?.active) {
@@ -858,7 +890,9 @@ function renderPlayerSelect() {
   if (selectedPlayerName) {
     selectedPlayerName.textContent = selectedPlayer?.fullName ?? "None selected";
   }
-  playersCount.textContent = String(activePlayers.length);
+  if (playersCount) {
+    playersCount.textContent = String(activePlayers.length);
+  }
 }
 
 function buildScheduleCardElement(game) {
@@ -1099,6 +1133,10 @@ function buildTeamStandingRows() {
 }
 
 function renderScheduleView() {
+  if (!scheduleGrid) {
+    return;
+  }
+
   scheduleGrid.innerHTML = "";
 
   if (!games.length) {
@@ -1144,6 +1182,10 @@ function buildTeamMemberCard(player) {
 }
 
 function updateGamesPager() {
+  if (!gamesPager || !gamesPagerLabel || !gamesPrev || !gamesNext) {
+    return;
+  }
+
   const total = games.length;
 
   if (total <= 1 || !selectedPlayerId) {
@@ -1158,6 +1200,10 @@ function updateGamesPager() {
 }
 
 function updateRosterPager() {
+  if (!rosterPager || !rosterPagerLabel || !rosterPrev || !rosterNext) {
+    return;
+  }
+
   const total = games.length;
 
   if (total <= 1) {
@@ -1172,6 +1218,10 @@ function updateRosterPager() {
 }
 
 function renderAvailabilityView() {
+  if (!gamesGrid) {
+    return;
+  }
+
   syncGameBoardIndex();
   gamesGrid.innerHTML = "";
   const activePlayers = getActivePlayers();
@@ -1204,6 +1254,10 @@ function renderAvailabilityView() {
 }
 
 function renderRosterView() {
+  if (!rosterGrid) {
+    return;
+  }
+
   syncRosterBoardIndex();
   rosterGrid.innerHTML = "";
 
@@ -1228,6 +1282,10 @@ function renderRosterView() {
 }
 
 function renderTeamStandingView() {
+  if (!teamStandingGrid || !teamStandingNote) {
+    return;
+  }
+
   teamStandingGrid.innerHTML = "";
 
   const completedGames = games.filter((game) => game.matchStatus === "completed" && game.result !== "pending");
@@ -1369,6 +1427,10 @@ function buildAdminPlayerCard(player, options = {}) {
 }
 
 function updatePlayersAdminPager() {
+  if (!playersAdminPager || !playersAdminPagerLabel || !playersAdminPrev || !playersAdminNext) {
+    return;
+  }
+
   const total = players.length;
 
   if (total <= 1 || !isApprovedAdmin) {
@@ -1423,6 +1485,10 @@ function buildExistingPlayerAdminCard(player) {
 }
 
 function renderPlayersAdminControls() {
+  if (!playersAdminGrid) {
+    return;
+  }
+
   syncPlayerAdminIndex();
   playersAdminGrid.innerHTML = "";
 
@@ -1479,6 +1545,10 @@ function renderPlayersAdminControls() {
 }
 
 function updateGamesAdminPager() {
+  if (!adminGamesPager || !adminGamesPagerLabel || !adminGamesPrev || !adminGamesNext) {
+    return;
+  }
+
   const total = games.length;
 
   if (total <= 1 || !isApprovedAdmin) {
@@ -1551,6 +1621,10 @@ function buildExistingGameAdminCard(game) {
 }
 
 function renderGamesAdminControls() {
+  if (!adminGrid) {
+    return;
+  }
+
   syncGameAdminIndex();
   adminGrid.innerHTML = "";
 
@@ -2088,13 +2162,17 @@ function renderApp() {
   renderGamesAdminControls();
 }
 
-navToggle.addEventListener("click", () => {
-  setNavOpen(!navOpen);
-});
+if (navToggle) {
+  navToggle.addEventListener("click", () => {
+    setNavOpen(!navOpen);
+  });
+}
 
-navOverlay.addEventListener("click", () => {
-  setNavOpen(false);
-});
+if (navOverlay) {
+  navOverlay.addEventListener("click", () => {
+    setNavOpen(false);
+  });
+}
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && navOpen) {
@@ -2108,80 +2186,102 @@ navButtons.forEach((button) => {
   });
 });
 
-adminSignIn.addEventListener("click", async () => {
-  await beginAdminSignIn();
-});
+if (adminSignIn) {
+  adminSignIn.addEventListener("click", async () => {
+    await beginAdminSignIn();
+  });
+}
 
-adminSignOut.addEventListener("click", async () => {
-  try {
-    await signOut(auth);
-    setAdminStatus("Signed out of admin access.", "");
-  } catch (error) {
-    console.error(error);
-    setAdminStatus("Could not sign out right now.", "error");
-  }
-});
+if (adminSignOut) {
+  adminSignOut.addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+      setAdminStatus("Signed out of admin access.", "");
+    } catch (error) {
+      console.error(error);
+      setAdminStatus("Could not sign out right now.", "error");
+    }
+  });
+}
 
-playerSelect.addEventListener("change", (event) => {
-  selectedPlayerId = event.target.value;
-  renderApp();
-});
+if (playerSelect) {
+  playerSelect.addEventListener("change", (event) => {
+    selectedPlayerId = event.target.value;
+    renderApp();
+  });
+}
 
-gamesPrev.addEventListener("click", () => {
-  if (gameBoardIndex > 0) {
-    gameBoardIndex -= 1;
-    renderAvailabilityView();
-  }
-});
+if (gamesPrev) {
+  gamesPrev.addEventListener("click", () => {
+    if (gameBoardIndex > 0) {
+      gameBoardIndex -= 1;
+      renderAvailabilityView();
+    }
+  });
+}
 
-gamesNext.addEventListener("click", () => {
-  if (gameBoardIndex < games.length - 1) {
-    gameBoardIndex += 1;
-    renderAvailabilityView();
-  }
-});
+if (gamesNext) {
+  gamesNext.addEventListener("click", () => {
+    if (gameBoardIndex < games.length - 1) {
+      gameBoardIndex += 1;
+      renderAvailabilityView();
+    }
+  });
+}
 
-rosterPrev.addEventListener("click", () => {
-  if (rosterBoardIndex > 0) {
-    rosterBoardIndex -= 1;
-    renderRosterView();
-  }
-});
+if (rosterPrev) {
+  rosterPrev.addEventListener("click", () => {
+    if (rosterBoardIndex > 0) {
+      rosterBoardIndex -= 1;
+      renderRosterView();
+    }
+  });
+}
 
-rosterNext.addEventListener("click", () => {
-  if (rosterBoardIndex < games.length - 1) {
-    rosterBoardIndex += 1;
-    renderRosterView();
-  }
-});
+if (rosterNext) {
+  rosterNext.addEventListener("click", () => {
+    if (rosterBoardIndex < games.length - 1) {
+      rosterBoardIndex += 1;
+      renderRosterView();
+    }
+  });
+}
 
-adminGamesPrev.addEventListener("click", () => {
-  if (gameAdminIndex > 0) {
-    gameAdminIndex -= 1;
-    renderGamesAdminControls();
-  }
-});
+if (adminGamesPrev) {
+  adminGamesPrev.addEventListener("click", () => {
+    if (gameAdminIndex > 0) {
+      gameAdminIndex -= 1;
+      renderGamesAdminControls();
+    }
+  });
+}
 
-adminGamesNext.addEventListener("click", () => {
-  if (gameAdminIndex < games.length - 1) {
-    gameAdminIndex += 1;
-    renderGamesAdminControls();
-  }
-});
+if (adminGamesNext) {
+  adminGamesNext.addEventListener("click", () => {
+    if (gameAdminIndex < games.length - 1) {
+      gameAdminIndex += 1;
+      renderGamesAdminControls();
+    }
+  });
+}
 
-playersAdminPrev.addEventListener("click", () => {
-  if (playerAdminIndex > 0) {
-    playerAdminIndex -= 1;
-    renderPlayersAdminControls();
-  }
-});
+if (playersAdminPrev) {
+  playersAdminPrev.addEventListener("click", () => {
+    if (playerAdminIndex > 0) {
+      playerAdminIndex -= 1;
+      renderPlayersAdminControls();
+    }
+  });
+}
 
-playersAdminNext.addEventListener("click", () => {
-  if (playerAdminIndex < players.length - 1) {
-    playerAdminIndex += 1;
-    renderPlayersAdminControls();
-  }
-});
+if (playersAdminNext) {
+  playersAdminNext.addEventListener("click", () => {
+    if (playerAdminIndex < players.length - 1) {
+      playerAdminIndex += 1;
+      renderPlayersAdminControls();
+    }
+  });
+}
 
 renderApp();
 setAdminStatus("Sign in to make changes.", "");
