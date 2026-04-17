@@ -6,7 +6,6 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   setPersistence,
-  signInWithPopup,
   signInWithRedirect,
   signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -194,10 +193,6 @@ function userIsApprovedAdmin(user) {
   return APPROVED_ADMIN_EMAILS.has(normalizeEmail(user?.email));
 }
 
-function shouldPreferRedirectSignIn() {
-  return /iphone|ipad|ipod|android/i.test(window.navigator.userAgent);
-}
-
 function buildFullName(firstName, lastName) {
   return `${firstName.trim()} ${lastName.trim()}`.trim();
 }
@@ -275,12 +270,6 @@ function refreshAdminSessionUi() {
     adminHelperText.textContent =
       "Sign in with an approved admin account to manage players, rosters, and scores.";
   }
-
-  const currentUser = adminUser?.email ?? "none";
-  const approval = adminUser ? (isApprovedAdmin ? "approved admin" : "not approved") : "signed out";
-  const signInMode = shouldPreferRedirectSignIn()
-    ? "popup first, redirect fallback (mobile)"
-    : "popup first, redirect fallback";
 }
 
 function setNavOpen(nextOpen) {
@@ -1595,39 +1584,13 @@ function buildGamePersistencePayload(updates) {
 
 async function beginAdminSignIn() {
   try {
-    lastAuthFlowEvent = "Trying popup sign-in flow";
+    lastAuthFlowEvent = "Starting redirect sign-in flow";
     refreshAdminSessionUi();
-    setAdminStatus("Opening Google sign-in...", "warning");
-    const result = await signInWithPopup(auth, googleProvider);
-    lastAuthFlowEvent = `Popup sign-in completed for ${result.user.email ?? "unknown email"}`;
-    refreshAdminSessionUi();
+    setAdminStatus("Redirecting to Google sign-in...", "warning");
+    await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     console.error(error);
-
-    const fallbackCodes = new Set([
-      "auth/popup-blocked",
-      "auth/popup-closed-by-user",
-      "auth/cancelled-popup-request",
-      "auth/operation-not-supported-in-this-environment",
-    ]);
-
-    if (fallbackCodes.has(error.code)) {
-      try {
-        lastAuthFlowEvent = `Popup failed with ${error.code}; falling back to redirect`;
-        refreshAdminSessionUi();
-        setAdminStatus("Sign-in popup was blocked. Trying redirect sign-in...", "warning");
-        await signInWithRedirect(auth, googleProvider);
-        return;
-      } catch (redirectError) {
-        console.error(redirectError);
-        lastAuthFlowEvent = `Redirect fallback failed with ${redirectError.code ?? "unknown error"}`;
-        refreshAdminSessionUi();
-        setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
-        return;
-      }
-    }
-
-    lastAuthFlowEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
+    lastAuthFlowEvent = `Redirect sign-in failed with ${error.code ?? "unknown error"}`;
     refreshAdminSessionUi();
     setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
   }
