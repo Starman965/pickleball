@@ -125,6 +125,7 @@ const playerAdminNav = document.getElementById("nav-player-admin");
 const scheduleAdminNav = document.getElementById("nav-schedule-admin");
 const viewSections = Array.from(document.querySelectorAll(".view-section"));
 const topbarLabel = document.getElementById("topbar-label");
+const heroShell = document.getElementById("hero-shell");
 const heroStats = document.getElementById("hero-stats");
 const matchesStatCard = document.getElementById("matches-stat-card");
 const rosterStatCard = document.getElementById("roster-stat-card");
@@ -360,6 +361,10 @@ function updateViewUi() {
     const showStats = !["availability", "team", "roster"].includes(activeView);
     const showMatchesStat = activeView === "schedule" || activeView === "schedule-admin";
     const showRosterStat = activeView === "player-admin" || activeView === "members";
+
+    if (heroShell) {
+      heroShell.hidden = !showStats;
+    }
 
     heroStats.hidden = !showStats;
 
