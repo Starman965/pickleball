@@ -120,9 +120,9 @@ const PT_TIME_LABEL_FORMATTER = new Intl.DateTimeFormat("en-US", {
 
 const PACIFIC_TZ = "America/Los_Angeles";
 const NEWS_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  month: "short",
+  month: "numeric",
   day: "numeric",
-  year: "numeric",
+  year: "2-digit",
   hour: "numeric",
   minute: "2-digit",
   timeZone: PACIFIC_TZ,
@@ -499,7 +499,7 @@ function formatNewsTimestamp(timestampMs) {
     return "Just now";
   }
 
-  return `${NEWS_DATE_FORMATTER.format(new Date(timestampMs))} PT`;
+  return NEWS_DATE_FORMATTER.format(new Date(timestampMs)).replace(/\//g, ".");
 }
 
 function getNewsPostMeta(post) {
