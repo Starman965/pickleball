@@ -2936,7 +2936,7 @@ function bootstrapGamesListener() {
         .sort(compareGamesForDisplay);
 
       gamesCount.textContent = String(games.length);
-      setStatus("Live schedule connected. Availability and roster updates are ready.", "success");
+      setStatus("", "");
       renderApp();
     },
     (error) => {
