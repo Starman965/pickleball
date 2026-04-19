@@ -20,6 +20,13 @@ import {
   setDoc,
   updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import {
+  deleteObject,
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytes,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA-U1iMe59o2i9ZQe5Z_eMFX-9WIFYS4mc",
@@ -35,8 +42,15 @@ const APPROVED_ADMIN_EMAILS = new Set([
   "ronan@flycurrent.ai",
 ]);
 const DEFAULT_NEW_GAME_TIME = "12:00";
+const ADMIN_VIEW_IDS = new Set(["player-admin", "schedule-admin", "news-admin"]);
 
 const VIEW_META = {
+  news: {
+    label: "News",
+    eyebrow: "Team Updates",
+    title: "News",
+    copy: "Catch the latest team updates, announcements, photos, and links from Hawk'n'Roll.",
+  },
   members: {
     label: "The Team",
     eyebrow: "Current roster",
@@ -83,6 +97,12 @@ const VIEW_META = {
     title: "Schedule Mgmt",
     copy: "Create matchups, update details, and enter final scores.",
   },
+  "news-admin": {
+    label: "Newsroom",
+    eyebrow: "Operations",
+    title: "Newsroom",
+    copy: "Publish team updates with text, one image, and an optional link.",
+  },
 };
 
 const PT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -99,6 +119,14 @@ const PT_TIME_LABEL_FORMATTER = new Intl.DateTimeFormat("en-US", {
 });
 
 const PACIFIC_TZ = "America/Los_Angeles";
+const NEWS_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: PACIFIC_TZ,
+});
 
 const PACIFIC_CLOCK_FORMATTER = new Intl.DateTimeFormat("en-US", {
   timeZone: PACIFIC_TZ,
@@ -113,6 +141,7 @@ const PACIFIC_CLOCK_FORMATTER = new Intl.DateTimeFormat("en-US", {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: "select_account" });
@@ -123,6 +152,7 @@ const sideNav = document.getElementById("side-nav");
 const navButtons = Array.from(document.querySelectorAll("[data-view-target]"));
 const playerAdminNav = document.getElementById("nav-player-admin");
 const scheduleAdminNav = document.getElementById("nav-schedule-admin");
+const newsAdminNav = document.getElementById("nav-news-admin");
 const viewSections = Array.from(document.querySelectorAll(".view-section"));
 const topbarLabel = document.getElementById("topbar-label");
 const heroShell = document.getElementById("hero-shell");
@@ -130,6 +160,7 @@ const heroStats = document.getElementById("hero-stats");
 const matchesStatCard = document.getElementById("matches-stat-card");
 const rosterStatCard = document.getElementById("roster-stat-card");
 
+const newsFeed = document.getElementById("news-feed");
 const membersGrid = document.getElementById("members-grid");
 const scheduleGrid = document.getElementById("schedule-grid");
 const playerSelect = document.getElementById("player-select");
@@ -158,6 +189,7 @@ const adminGamesPager = document.getElementById("admin-games-pager");
 const adminGamesPrev = document.getElementById("admin-games-prev");
 const adminGamesNext = document.getElementById("admin-games-next");
 const adminGamesPagerLabel = document.getElementById("admin-games-pager-label");
+const newsAdminGrid = document.getElementById("news-admin-grid");
 const playersAdminGrid = document.getElementById("players-admin-grid");
 const playersAdminPager = document.getElementById("players-admin-pager");
 const playersAdminPrev = document.getElementById("players-admin-prev");
@@ -175,11 +207,14 @@ const adminCardTemplate = document.getElementById("admin-card-template");
 const playerAdminTemplate = document.getElementById("player-admin-template");
 const playerTemplate = document.getElementById("player-row-template");
 
-let activeView = "schedule";
+let activeView = "news";
 let navOpen = false;
 let selectedPlayerId = "";
 let players = [];
 let games = [];
+let newsPosts = [];
+let newsLoaded = false;
+let newsLoadError = "";
 let savingState = false;
 let gameBoardIndex = 0;
 let lastGamesSignature = "";
@@ -262,7 +297,7 @@ function setStatus(message, tone = "") {
 
   statusBanner.textContent = message;
   statusBanner.className = "status-banner";
-  if (tone === "warning" || tone === "error") {
+  if (tone === "warning" || tone === "error" || tone === "success") {
     statusBanner.classList.add(`is-${tone}`);
   } else {
     statusBanner.classList.add("is-hidden");
@@ -276,7 +311,7 @@ function setAdminStatus(message, tone = "") {
 
   adminStatus.textContent = message;
   adminStatus.className = "admin-status";
-  if (tone === "warning" || tone === "error") {
+  if (tone === "warning" || tone === "error" || tone === "success") {
     adminStatus.classList.add(`is-${tone}`);
   } else {
     adminStatus.classList.add("is-hidden");
@@ -304,7 +339,7 @@ function refreshAdminSessionUi() {
     adminHelperText.textContent = "This account is signed in, but it is not on the approved admin list.";
   } else {
     adminHelperText.textContent =
-      "Sign in with an approved admin account to manage players, rosters, and scores.";
+      "Sign in with an approved admin account to manage players, rosters, scores, and news.";
   }
 }
 
@@ -326,7 +361,7 @@ function setActiveView(viewId) {
   if (!VIEW_META[viewId]) {
     return;
   }
-  if ((viewId === "player-admin" || viewId === "schedule-admin") && !isApprovedAdmin) {
+  if (ADMIN_VIEW_IDS.has(viewId) && !isApprovedAdmin) {
     return;
   }
   activeView = viewId;
@@ -345,7 +380,11 @@ function syncAdminNavAccess() {
     scheduleAdminNav.hidden = !adminViewsVisible;
   }
 
-  if (!adminViewsVisible && (activeView === "player-admin" || activeView === "schedule-admin")) {
+  if (newsAdminNav) {
+    newsAdminNav.hidden = !adminViewsVisible;
+  }
+
+  if (!adminViewsVisible && ADMIN_VIEW_IDS.has(activeView)) {
     activeView = "schedule";
   }
 }
@@ -358,9 +397,9 @@ function updateViewUi() {
   }
 
   if (heroStats) {
-    const showStats = !["availability", "team", "roster"].includes(activeView);
     const showMatchesStat = activeView === "schedule" || activeView === "schedule-admin";
     const showRosterStat = activeView === "player-admin" || activeView === "members";
+    const showStats = showMatchesStat || showRosterStat;
 
     if (heroShell) {
       heroShell.hidden = !showStats;
@@ -416,6 +455,144 @@ function normalizeNullableNumber(value) {
 
 function normalizeMatchStatus(value) {
   return value === "completed" ? "completed" : "scheduled";
+}
+
+function normalizeUrl(value) {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeFirestoreTimestampMs(value) {
+  if (!value) {
+    return 0;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+
+  if (typeof value.toDate === "function") {
+    return value.toDate().getTime();
+  }
+
+  return 0;
+}
+
+function formatNewsTimestamp(timestampMs) {
+  if (!timestampMs) {
+    return "Just now";
+  }
+
+  return `${NEWS_DATE_FORMATTER.format(new Date(timestampMs))} PT`;
+}
+
+function getNewsPostMeta(post) {
+  if (post.updatedAtMs && Math.abs(post.updatedAtMs - post.createdAtMs) > 60_000) {
+    return `Updated ${formatNewsTimestamp(post.updatedAtMs)}`;
+  }
+
+  return `Posted ${formatNewsTimestamp(post.createdAtMs || post.updatedAtMs)}`;
+}
+
+function getNewsPostLinkLabel(linkUrl) {
+  if (!linkUrl) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(linkUrl);
+    return parsed.hostname.replace(/^www\./, "");
+  } catch {
+    return "Open link";
+  }
+}
+
+function sanitizeDownloadFileName(value) {
+  const normalized = (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return normalized || "team-update";
+}
+
+function inferImageExtensionFromUrl(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    const match = pathname.match(/\.([a-z0-9]{3,4})$/i);
+    return match ? `.${match[1].toLowerCase()}` : ".jpg";
+  } catch {
+    return ".jpg";
+  }
+}
+
+function createNewsActionIcon(iconName) {
+  const svgNs = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNs, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  svg.classList.add("news-card__icon");
+
+  const path = document.createElementNS(svgNs, "path");
+  path.setAttribute("fill", "currentColor");
+
+  if (iconName === "download") {
+    path.setAttribute(
+      "d",
+      "M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.41l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.41L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z",
+    );
+  } else {
+    path.setAttribute(
+      "d",
+      "M10.59 13.41a1 1 0 0 1 0-1.41l3.3-3.3a3 3 0 1 1 4.24 4.24l-2.12 2.12a3 3 0 0 1-4.25 0 1 1 0 0 1 1.42-1.41 1 1 0 0 0 1.41 0l2.13-2.12a1 1 0 1 0-1.42-1.42L12 13.41a1 1 0 0 1-1.41 0Zm2.82-2.82a1 1 0 0 1 0 1.41l-3.3 3.3a3 3 0 1 1-4.24-4.24l2.12-2.12a3 3 0 0 1 4.25 0 1 1 0 1 1-1.42 1.41 1 1 0 0 0-1.41 0l-2.13 2.12a1 1 0 1 0 1.42 1.42l3.3-3.3a1 1 0 0 1 1.41 0Z",
+    );
+  }
+
+  svg.append(path);
+  return svg;
+}
+
+async function downloadNewsImage(post) {
+  if (!post.imageUrl) {
+    return;
+  }
+
+  try {
+    const response = await fetch(post.imageUrl);
+    if (!response.ok) {
+      throw new Error(`Image download failed with ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `${sanitizeDownloadFileName(post.title)}${inferImageExtensionFromUrl(post.imageUrl)}`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch (error) {
+    console.error(error);
+    window.open(post.imageUrl, "_blank", "noopener,noreferrer");
+  }
 }
 
 function deriveMatchResult(matchStatus, teamScore, opponentScore) {
@@ -560,6 +737,38 @@ function createGameId(dateValue, opponent, location) {
   return `${safeDateValue}-${slugSource || "game"}-${suffix}`;
 }
 
+function createNewsPostId() {
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  const suffix =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID().slice(0, 8)
+      : Math.random().toString(36).slice(2, 10);
+  return `${dateStamp}-news-${suffix}`;
+}
+
+function getFileNameParts(fileName) {
+  const trimmed = (fileName ?? "").trim();
+  const lastDot = trimmed.lastIndexOf(".");
+  if (lastDot <= 0 || lastDot === trimmed.length - 1) {
+    return {
+      baseName: trimmed || "image",
+      extension: "",
+    };
+  }
+
+  return {
+    baseName: trimmed.slice(0, lastDot),
+    extension: trimmed.slice(lastDot).toLowerCase().replace(/[^.a-z0-9]/g, ""),
+  };
+}
+
+function buildNewsImagePath(postId, file) {
+  const { baseName, extension } = getFileNameParts(file?.name);
+  const safeBaseName = slugify(baseName).slice(0, 32) || "image";
+  const safeExtension = extension || ".jpg";
+  return `news/${postId}/${Date.now()}-${safeBaseName}${safeExtension}`;
+}
+
 function normalizePlayer(docSnapshot) {
   const data = docSnapshot.data();
   const firstName = (data.firstName ?? "").trim();
@@ -597,6 +806,29 @@ function normalizeGame(docSnapshot) {
     teamScore,
     opponentScore,
     result: data.result ?? deriveMatchResult(matchStatus, teamScore, opponentScore),
+  };
+}
+
+function normalizeNewsPost(docSnapshot) {
+  const data = docSnapshot.data();
+  const title = (data.title ?? "").trim();
+  const body = (data.body ?? "").trim();
+  const linkUrl = normalizeUrl(data.linkUrl);
+  const createdAtMs = normalizeFirestoreTimestampMs(data.createdAt);
+  const updatedAtMs = normalizeFirestoreTimestampMs(data.updatedAt);
+
+  return {
+    id: docSnapshot.id,
+    title: title || "Team update",
+    body,
+    linkUrl: linkUrl || "",
+    imageUrl: typeof data.imageUrl === "string" ? data.imageUrl : "",
+    imagePath: typeof data.imagePath === "string" ? data.imagePath : "",
+    createdAtMs,
+    updatedAtMs,
+    createdByAdmin: normalizeEmail(data.createdByAdmin),
+    updatedByAdmin: normalizeEmail(data.updatedByAdmin),
+    sortMs: updatedAtMs || createdAtMs || 0,
   };
 }
 
@@ -1186,6 +1418,207 @@ function buildTeamMemberCard(player) {
   return card;
 }
 
+function buildNewsCard(post) {
+  const card = document.createElement("article");
+  card.className = "game-card news-card";
+
+  const header = document.createElement("div");
+  header.className = "game-card__top";
+
+  const headerContent = document.createElement("div");
+  const date = document.createElement("p");
+  date.className = "game-card__date";
+  date.textContent = getNewsPostMeta(post);
+
+  const title = document.createElement("h3");
+  title.className = "game-card__title";
+  title.textContent = post.title;
+
+  headerContent.append(date, title);
+
+  const badge = document.createElement("span");
+  badge.className = "game-card__badge game-card__badge--muted";
+  badge.textContent = post.imageUrl ? "Photo" : "Post";
+
+  header.append(headerContent, badge);
+  card.append(header);
+
+  if (post.imageUrl) {
+    const image = document.createElement("img");
+    image.className = "news-card__image";
+    image.src = post.imageUrl;
+    image.alt = "News post image";
+    card.append(image);
+  }
+
+  const body = document.createElement("p");
+  body.className = "news-card__body";
+  body.textContent = post.body;
+  card.append(body);
+
+  if (post.linkUrl) {
+    const actions = document.createElement("div");
+    actions.className = "news-card__actions";
+
+    const link = document.createElement("a");
+    link.className = "news-card__link";
+    link.href = post.linkUrl;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    const linkLabel = document.createElement("span");
+    linkLabel.textContent = getNewsPostLinkLabel(post.linkUrl);
+    link.append(createNewsActionIcon("link"), linkLabel);
+    actions.append(link);
+
+    if (post.imageUrl) {
+      const downloadButton = document.createElement("button");
+      downloadButton.type = "button";
+      downloadButton.className = "news-card__link";
+      downloadButton.append(createNewsActionIcon("download"));
+      const downloadLabel = document.createElement("span");
+      downloadLabel.textContent = "Download image";
+      downloadButton.append(downloadLabel);
+      downloadButton.addEventListener("click", async () => {
+        await downloadNewsImage(post);
+      });
+      actions.append(downloadButton);
+    }
+
+    card.append(actions);
+  } else if (post.imageUrl) {
+    const actions = document.createElement("div");
+    actions.className = "news-card__actions";
+
+    const downloadButton = document.createElement("button");
+    downloadButton.type = "button";
+    downloadButton.className = "news-card__link";
+    downloadButton.append(createNewsActionIcon("download"));
+    const downloadLabel = document.createElement("span");
+    downloadLabel.textContent = "Download image";
+    downloadButton.append(downloadLabel);
+    downloadButton.addEventListener("click", async () => {
+      await downloadNewsImage(post);
+    });
+
+    actions.append(downloadButton);
+    card.append(actions);
+  }
+
+  return card;
+}
+
+function buildNewsAdminCard(post, options = {}) {
+  const article = document.createElement("article");
+  article.className = "admin-card news-editor-card";
+
+  const header = document.createElement("div");
+  header.className = "admin-card__header";
+
+  const headerCopy = document.createElement("div");
+  const title = document.createElement("h3");
+  title.textContent = options.title ?? "Edit post";
+  const meta = document.createElement("p");
+  meta.className = "admin-card__meta";
+  meta.textContent = options.meta ?? getNewsPostMeta(post);
+  headerCopy.append(title, meta);
+
+  const badge = document.createElement("span");
+  badge.className = "game-card__badge";
+  badge.textContent = post.imageUrl ? "Live with photo" : "Live";
+
+  header.append(headerCopy, badge);
+
+  const form = document.createElement("form");
+  form.className = "admin-form";
+
+  const titleField = document.createElement("label");
+  titleField.className = "field";
+  const titleLabel = document.createElement("span");
+  titleLabel.className = "field__label";
+  titleLabel.textContent = "Post title";
+  const titleInput = document.createElement("input");
+  titleInput.className = "field__input";
+  titleInput.type = "text";
+  titleInput.required = true;
+  titleInput.value = post.title;
+  titleField.append(titleLabel, titleInput);
+
+  const bodyField = document.createElement("label");
+  bodyField.className = "field";
+  const bodyLabel = document.createElement("span");
+  bodyLabel.className = "field__label";
+  bodyLabel.textContent = "Post text";
+  const bodyInput = document.createElement("textarea");
+  bodyInput.className = "field__input field__input--textarea";
+  bodyInput.required = true;
+  bodyInput.rows = 5;
+  bodyInput.value = post.body;
+  bodyField.append(bodyLabel, bodyInput);
+
+  const linkField = document.createElement("label");
+  linkField.className = "field";
+  const linkLabel = document.createElement("span");
+  linkLabel.className = "field__label";
+  linkLabel.textContent = "Link URL (optional)";
+  const linkInput = document.createElement("input");
+  linkInput.className = "field__input";
+  linkInput.type = "url";
+  linkInput.placeholder = "https://";
+  linkInput.value = post.linkUrl;
+  linkField.append(linkLabel, linkInput);
+
+  const imageField = document.createElement("label");
+  imageField.className = "field";
+  const imageLabel = document.createElement("span");
+  imageLabel.className = "field__label";
+  imageLabel.textContent = "Image (optional)";
+  const imageInput = document.createElement("input");
+  imageInput.className = "field__input";
+  imageInput.type = "file";
+  imageInput.accept = "image/*";
+  imageField.append(imageLabel, imageInput);
+
+  const imagePreview = document.createElement("div");
+  imagePreview.className = "news-editor-card__media";
+  if (post.imageUrl) {
+    const previewImage = document.createElement("img");
+    previewImage.className = "news-editor-card__image";
+    previewImage.src = post.imageUrl;
+    previewImage.alt = "Current news post image";
+    imagePreview.append(previewImage);
+  } else {
+    imagePreview.hidden = true;
+  }
+
+  const removeImageRow = document.createElement("label");
+  removeImageRow.className = "checkbox-row";
+  const removeImageInput = document.createElement("input");
+  removeImageInput.type = "checkbox";
+  const removeImageText = document.createElement("span");
+  removeImageText.textContent = "Remove current image";
+  removeImageRow.append(removeImageInput, removeImageText);
+  removeImageRow.hidden = !post.imageUrl;
+
+  const actions = document.createElement("div");
+  actions.className = "admin-form__actions";
+
+  form.append(titleField, bodyField, linkField, imageField, imagePreview, removeImageRow, actions);
+  article.append(header, form);
+
+  return {
+    card: article,
+    form,
+    actions,
+    titleInput,
+    bodyInput,
+    linkInput,
+    imageInput,
+    imagePreview,
+    removeImageInput,
+    removeImageRow,
+  };
+}
+
 function updateGamesPager() {
   if (!gamesPager || !gamesPagerLabel || !gamesPrev || !gamesNext) {
     return;
@@ -1339,6 +1772,42 @@ function renderMembersView() {
 
   players.forEach((player) => {
     membersGrid.append(buildTeamMemberCard(player));
+  });
+}
+
+function renderNewsView() {
+  if (!newsFeed) {
+    return;
+  }
+
+  newsFeed.innerHTML = "";
+
+  if (newsLoadError) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = newsLoadError;
+    newsFeed.append(empty);
+    return;
+  }
+
+  if (!newsLoaded) {
+    const loading = document.createElement("div");
+    loading.className = "games-grid__empty";
+    loading.textContent = "Loading the latest news...";
+    newsFeed.append(loading);
+    return;
+  }
+
+  if (!newsPosts.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No news has been posted yet.";
+    newsFeed.append(empty);
+    return;
+  }
+
+  newsPosts.forEach((post) => {
+    newsFeed.append(buildNewsCard(post));
   });
 }
 
@@ -1684,6 +2153,194 @@ function renderGamesAdminControls() {
   updateGamesAdminPager();
 }
 
+function buildNewsPersistencePayload(updates) {
+  const title = (updates.title ?? "").trim();
+  const body = (updates.body ?? "").trim();
+  const normalizedLinkUrl = normalizeUrl(updates.linkUrl);
+  const imageFile = updates.imageFile ?? null;
+
+  if (!title) {
+    return { error: "Post title is required." };
+  }
+
+  if (!body) {
+    return { error: "Post text is required." };
+  }
+
+  if (normalizedLinkUrl === null) {
+    return { error: "Enter a valid http or https link." };
+  }
+
+  if (imageFile && !String(imageFile.type ?? "").startsWith("image/")) {
+    return { error: "Choose an image file to upload." };
+  }
+
+  return {
+    title,
+    body,
+    linkUrl: normalizedLinkUrl || "",
+    imageFile,
+    removeImage: updates.removeImage === true,
+  };
+}
+
+async function uploadNewsImage(postId, file) {
+  const imagePath = buildNewsImagePath(postId, file);
+  const imageRef = ref(storage, imagePath);
+  await uploadBytes(imageRef, file, {
+    contentType: file.type || undefined,
+  });
+  const imageUrl = await getDownloadURL(imageRef);
+  return { imagePath, imageUrl };
+}
+
+async function deleteNewsImageByPath(imagePath) {
+  if (!imagePath) {
+    return;
+  }
+
+  try {
+    await deleteObject(ref(storage, imagePath));
+  } catch (error) {
+    if (error?.code !== "storage/object-not-found") {
+      throw error;
+    }
+  }
+}
+
+function buildBlankNewsDraft() {
+  return {
+    id: "",
+    title: "",
+    body: "",
+    linkUrl: "",
+    imageUrl: "",
+    imagePath: "",
+    createdAtMs: 0,
+    updatedAtMs: 0,
+  };
+}
+
+function buildExistingNewsAdminCard(post) {
+  const adminCard = buildNewsAdminCard(post);
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "action-btn";
+  resetButton.textContent = "Reset";
+  resetButton.disabled = savingState;
+  resetButton.addEventListener("click", () => {
+    adminCard.titleInput.value = post.title;
+    adminCard.bodyInput.value = post.body;
+    adminCard.linkInput.value = post.linkUrl;
+    adminCard.imageInput.value = "";
+    adminCard.removeImageInput.checked = false;
+  });
+
+  const saveButton = document.createElement("button");
+  saveButton.type = "submit";
+  saveButton.className = "action-btn action-btn--active";
+  saveButton.textContent = "Save";
+  saveButton.disabled = savingState;
+
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "action-btn action-btn--danger";
+  deleteButton.textContent = "Delete";
+  deleteButton.disabled = savingState;
+  deleteButton.addEventListener("click", async () => {
+    const confirmed = window.confirm("Delete this news post?");
+    if (!confirmed) {
+      return;
+    }
+
+    await deleteNewsPost(post);
+  });
+
+  adminCard.actions.append(resetButton, saveButton, deleteButton);
+  adminCard.form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await updateNewsPost(post, {
+      title: adminCard.titleInput.value,
+      body: adminCard.bodyInput.value,
+      linkUrl: adminCard.linkInput.value,
+      imageFile: adminCard.imageInput.files?.[0] ?? null,
+      removeImage: adminCard.removeImageInput.checked,
+    });
+  });
+
+  return adminCard.card;
+}
+
+function renderNewsAdminControls() {
+  if (!newsAdminGrid) {
+    return;
+  }
+
+  newsAdminGrid.innerHTML = "";
+
+  if (newsLoadError) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = newsLoadError;
+    newsAdminGrid.append(empty);
+    return;
+  }
+
+  if (!isApprovedAdmin) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "Sign in with an approved admin account to publish team news.";
+    newsAdminGrid.append(empty);
+    return;
+  }
+
+  const createCard = buildNewsAdminCard(buildBlankNewsDraft(), {
+    title: "Create post",
+    meta: "Publish a new update to the public News feed.",
+  });
+  createCard.card.classList.add("admin-card--create");
+
+  const createButton = document.createElement("button");
+  createButton.type = "submit";
+  createButton.className = "action-btn action-btn--active";
+  createButton.textContent = "Publish post";
+  createButton.disabled = savingState;
+
+  createCard.actions.append(createButton);
+  createCard.form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await createNewsPost({
+      title: createCard.titleInput.value,
+      body: createCard.bodyInput.value,
+      linkUrl: createCard.linkInput.value,
+      imageFile: createCard.imageInput.files?.[0] ?? null,
+    });
+  });
+
+  newsAdminGrid.append(createCard.card);
+
+  if (!newsLoaded) {
+    const loading = document.createElement("div");
+    loading.className = "games-grid__empty";
+    loading.textContent = "Loading existing news posts...";
+    newsAdminGrid.append(loading);
+    return;
+  }
+
+  if (!newsPosts.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No news posts are live yet. Use the card above to publish the first one.";
+    newsAdminGrid.append(empty);
+    return;
+  }
+
+  newsPosts.forEach((post) => {
+    newsAdminGrid.append(buildExistingNewsAdminCard(post));
+  });
+}
+
 function buildGamePersistencePayload(updates) {
   const scheduledDate = updates.scheduledDate;
   const scheduledTime = updates.scheduledTime;
@@ -1764,6 +2421,144 @@ async function beginAdminSignIn() {
     lastAuthFlowEvent = `Popup sign-in failed with ${error.code ?? "unknown error"}`;
     refreshAdminSessionUi();
     setAdminStatus("Sign-in could not start. Check the Firebase sign-in setup.", "error");
+  }
+}
+
+async function createNewsPost(updates) {
+  if (!isApprovedAdmin) {
+    setAdminStatus("Sign in first to publish news.", "error");
+    return;
+  }
+
+  const normalized = buildNewsPersistencePayload(updates);
+  if (normalized.error) {
+    setAdminStatus(normalized.error, "error");
+    return;
+  }
+
+  const postId = createNewsPostId();
+  let uploadedImage = null;
+
+  savingState = true;
+  setAdminStatus("Publishing news post...", "warning");
+  renderApp();
+
+  try {
+    if (normalized.imageFile) {
+      uploadedImage = await uploadNewsImage(postId, normalized.imageFile);
+    }
+
+    await setDoc(doc(db, "newsPosts", postId), {
+      title: normalized.title,
+      body: normalized.body,
+      linkUrl: normalized.linkUrl,
+      imageUrl: uploadedImage?.imageUrl ?? "",
+      imagePath: uploadedImage?.imagePath ?? "",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      createdByAdmin: normalizeEmail(adminUser?.email),
+      updatedByAdmin: normalizeEmail(adminUser?.email),
+    });
+    setAdminStatus("", "");
+  } catch (error) {
+    console.error(error);
+
+    if (uploadedImage?.imagePath) {
+      try {
+        await deleteNewsImageByPath(uploadedImage.imagePath);
+      } catch (cleanupError) {
+        console.error(cleanupError);
+      }
+    }
+
+    setAdminStatus("Could not publish that news post right now.", "error");
+  } finally {
+    savingState = false;
+    renderApp();
+  }
+}
+
+async function updateNewsPost(post, updates) {
+  if (!isApprovedAdmin) {
+    setAdminStatus("Sign in first to edit news.", "error");
+    return;
+  }
+
+  const normalized = buildNewsPersistencePayload(updates);
+  if (normalized.error) {
+    setAdminStatus(normalized.error, "error");
+    return;
+  }
+
+  let uploadedImage = null;
+  const shouldRemoveExistingImage = normalized.removeImage || Boolean(normalized.imageFile);
+
+  savingState = true;
+  setAdminStatus("Saving news post...", "warning");
+  renderApp();
+
+  try {
+    if (normalized.imageFile) {
+      uploadedImage = await uploadNewsImage(post.id, normalized.imageFile);
+    }
+
+    await updateDoc(doc(db, "newsPosts", post.id), {
+      title: normalized.title,
+      body: normalized.body,
+      linkUrl: normalized.linkUrl,
+      imageUrl: uploadedImage?.imageUrl ?? (shouldRemoveExistingImage ? "" : post.imageUrl),
+      imagePath: uploadedImage?.imagePath ?? (shouldRemoveExistingImage ? "" : post.imagePath),
+      updatedAt: serverTimestamp(),
+      updatedByAdmin: normalizeEmail(adminUser?.email),
+    });
+
+    if (shouldRemoveExistingImage && post.imagePath) {
+      await deleteNewsImageByPath(post.imagePath);
+    }
+
+    setAdminStatus("", "");
+  } catch (error) {
+    console.error(error);
+
+    if (uploadedImage?.imagePath) {
+      try {
+        await deleteNewsImageByPath(uploadedImage.imagePath);
+      } catch (cleanupError) {
+        console.error(cleanupError);
+      }
+    }
+
+    setAdminStatus("Could not save that news post right now.", "error");
+  } finally {
+    savingState = false;
+    renderApp();
+  }
+}
+
+async function deleteNewsPost(post) {
+  if (!isApprovedAdmin) {
+    setAdminStatus("Sign in first to delete news.", "error");
+    return;
+  }
+
+  savingState = true;
+  setAdminStatus("Deleting news post...", "warning");
+  renderApp();
+
+  try {
+    await deleteDoc(doc(db, "newsPosts", post.id));
+
+    if (post.imagePath) {
+      await deleteNewsImageByPath(post.imagePath);
+    }
+
+    setAdminStatus("", "");
+  } catch (error) {
+    console.error(error);
+    setAdminStatus("Could not delete that news post right now.", "error");
+  } finally {
+    savingState = false;
+    renderApp();
   }
 }
 
@@ -2095,7 +2890,7 @@ async function initializeAdminAuth() {
     refreshAdminSessionUi();
 
     if (isApprovedAdmin) {
-      setAdminStatus(`Signed in as ${user.email}.`, "success");
+      setAdminStatus("", "");
     } else if (user) {
       setAdminStatus(`${user.email} is signed in, but it is not an approved admin account.`, "error");
     } else {
@@ -2154,9 +2949,31 @@ function bootstrapGamesListener() {
   );
 }
 
+function bootstrapNewsListener() {
+  newsLoaded = false;
+  newsLoadError = "";
+
+  onSnapshot(
+    collection(db, "newsPosts"),
+    (snapshot) => {
+      newsLoaded = true;
+      newsLoadError = "";
+      newsPosts = snapshot.docs.map(normalizeNewsPost).sort((left, right) => right.sortMs - left.sortMs);
+      renderApp();
+    },
+    (error) => {
+      console.error(error);
+      newsLoaded = true;
+      newsLoadError = "Could not load news from Firebase.";
+      renderApp();
+    },
+  );
+}
+
 function renderApp() {
   updateViewUi();
   refreshAdminSessionUi();
+  renderNewsView();
   renderPlayerSelect();
   renderMembersView();
   renderScheduleView();
@@ -2165,6 +2982,7 @@ function renderApp() {
   renderTeamStandingView();
   renderPlayersAdminControls();
   renderGamesAdminControls();
+  renderNewsAdminControls();
 }
 
 if (navToggle) {
@@ -2292,4 +3110,5 @@ renderApp();
 setAdminStatus("Sign in to make changes.", "");
 bootstrapPlayersListener();
 bootstrapGamesListener();
+bootstrapNewsListener();
 initializeAdminAuth();

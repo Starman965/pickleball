@@ -45,6 +45,9 @@
         </div>
 
         <nav class="side-nav__menu">
+          <button type="button" class="nav-link" data-view-target="news">
+            News
+          </button>
           <button type="button" class="nav-link" data-view-target="members">
             The Team
           </button>
@@ -77,6 +80,15 @@
             hidden
           >
             Schedule Mgmt
+          </button>
+          <button
+            type="button"
+            class="nav-link"
+            id="nav-news-admin"
+            data-view-target="news-admin"
+            hidden
+          >
+            Newsroom
           </button>
         </nav>
 
@@ -148,6 +160,20 @@
             <div class="admin-status is-hidden" id="admin-status">
               Sign in to make changes.
             </div>
+
+            <section class="panel view-section" id="view-news" hidden>
+              <div class="panel__header">
+                <div>
+                  <p class="panel__eyebrow">Team Updates</p>
+                  <h2>News</h2>
+                </div>
+                <p class="panel__copy">
+                  Catch the latest team updates, announcements, photos, and links from Hawk'n'Roll.
+                </p>
+              </div>
+
+              <div class="news-feed" id="news-feed"></div>
+            </section>
 
             <section class="panel view-section" id="view-members" hidden>
               <div class="panel__header">
@@ -323,6 +349,14 @@
                     </button>
                   </div>
                   <div class="admin-grid" id="admin-grid"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel panel--muted view-section" id="view-news-admin" hidden>
+              <div class="admin-subsection">
+                <div class="news-admin-board">
+                  <div class="news-admin-grid" id="news-admin-grid"></div>
                 </div>
               </div>
             </section>
