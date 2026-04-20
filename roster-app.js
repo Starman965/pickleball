@@ -42,7 +42,14 @@ const APPROVED_ADMIN_EMAILS = new Set([
   "ronan@flycurrent.ai",
 ]);
 const DEFAULT_NEW_GAME_TIME = "12:00";
-const ADMIN_VIEW_IDS = new Set(["player-admin", "schedule-admin", "news-admin"]);
+const ADMIN_VIEW_IDS = new Set(["pairings-admin", "player-admin", "schedule-admin", "news-admin"]);
+const PAIRING_KEYS = ["pair1", "pair2", "pair3", "pair4"];
+const SKILL_LEVEL_OPTIONS = [
+  { value: "low-intermediate", label: "Low Intermediate" },
+  { value: "intermediate", label: "Intermediate" },
+  { value: "advanced", label: "Advanced" },
+];
+const SKILL_LEVEL_LABELS = new Map(SKILL_LEVEL_OPTIONS.map((option) => [option.value, option.label]));
 
 const VIEW_META = {
   news: {
@@ -84,6 +91,12 @@ const VIEW_META = {
     title: "Team Standing",
     copy:
       "Final matchup scores roll up into win-loss tracking against each opponent as results are entered.",
+  },
+  "pairings-admin": {
+    label: "Pairings Mgmt",
+    eyebrow: "Operations",
+    title: "Pairings Mgmt",
+    copy: "Assign rostered players into matchup pairs and compare DUPR totals before match day.",
   },
   "player-admin": {
     label: "Player Mgmt",
@@ -156,6 +169,8 @@ const navToggle = document.getElementById("nav-toggle");
 const navOverlay = document.getElementById("nav-overlay");
 const sideNav = document.getElementById("side-nav");
 const navButtons = Array.from(document.querySelectorAll("[data-view-target]"));
+const adminNavSectionTitle = document.getElementById("nav-admin-section-title");
+const pairingsAdminNav = document.getElementById("nav-pairings-admin");
 const playerAdminNav = document.getElementById("nav-player-admin");
 const scheduleAdminNav = document.getElementById("nav-schedule-admin");
 const newsAdminNav = document.getElementById("nav-news-admin");
@@ -187,6 +202,13 @@ const rosterNext = document.getElementById("roster-next");
 const rosterPagerLabel = document.getElementById("roster-pager-label");
 const rosterViewEyebrow = document.getElementById("roster-view-eyebrow");
 const rosterViewCopy = document.getElementById("roster-view-copy");
+const rosterTabButtons = Array.from(document.querySelectorAll("[data-roster-tab]"));
+const pairingsGrid = document.getElementById("pairings-grid");
+const pairingsAdminGrid = document.getElementById("pairings-admin-grid");
+const pairingsAdminPager = document.getElementById("pairings-admin-pager");
+const pairingsAdminPrev = document.getElementById("pairings-admin-prev");
+const pairingsAdminNext = document.getElementById("pairings-admin-next");
+const pairingsAdminPagerLabel = document.getElementById("pairings-admin-pager-label");
 const teamStandingGrid = document.getElementById("team-standing-grid");
 const teamStandingNote = document.getElementById("team-standing-note");
 const gamesCount = document.getElementById("games-count");
@@ -230,12 +252,16 @@ let gameBoardIndex = 0;
 let lastGamesSignature = "";
 let rosterBoardIndex = 0;
 let lastRosterSignature = "";
+let pairingsAdminIndex = 0;
+let lastPairingsAdminSignature = "";
 let gameAdminIndex = 0;
 let lastGamesAdminSignature = "";
 let playerAdminIndex = 0;
 let lastPlayersSignature = "";
 let adminUser = null;
 let isApprovedAdmin = false;
+let rosterTab = "roster";
+let selectedPairingPlayerId = "";
 let lastAuthFlowEvent = "No Firebase auth event yet";
 let lastAuthStateEvent = "Firebase auth state has not reported yet";
 
@@ -382,6 +408,14 @@ function setActiveView(viewId) {
 function syncAdminNavAccess() {
   const adminViewsVisible = isApprovedAdmin;
 
+  if (adminNavSectionTitle) {
+    adminNavSectionTitle.hidden = !adminViewsVisible;
+  }
+
+  if (pairingsAdminNav) {
+    pairingsAdminNav.hidden = !adminViewsVisible;
+  }
+
   if (playerAdminNav) {
     playerAdminNav.hidden = !adminViewsVisible;
   }
@@ -461,6 +495,127 @@ function normalizeNullableNumber(value) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeSkillLevel(value) {
+  const normalized = (value ?? "").trim().toLowerCase();
+  return SKILL_LEVEL_LABELS.has(normalized) ? normalized : "";
+}
+
+function getSkillLevelLabel(value) {
+  return SKILL_LEVEL_LABELS.get(normalizeSkillLevel(value)) ?? "Not set";
+}
+
+function formatDupr(value) {
+  if (value === null || typeof value === "undefined") {
+    return "Not set";
+  }
+
+  return value.toFixed(3).replace(/\.?0+$/, "");
+}
+
+function formatTeamDupr(value) {
+  if (value === null || typeof value === "undefined") {
+    return "TBD";
+  }
+
+  return value.toFixed(3).replace(/\.?0+$/, "");
+}
+
+function createEmptyPairings() {
+  return Array.from({ length: 4 }, () => []);
+}
+
+function normalizePairings(value) {
+  if (Array.isArray(value)) {
+    return Array.from({ length: 4 }, (_, index) => normalizeStringArray(value[index]).slice(0, 2));
+  }
+
+  if (!value || typeof value !== "object") {
+    return createEmptyPairings();
+  }
+
+  return PAIRING_KEYS.map((key) => normalizeStringArray(value[key]).slice(0, 2));
+}
+
+function sanitizePairings(pairings, rosterPlayerIds) {
+  const allowedIds = new Set(normalizeStringArray(rosterPlayerIds));
+  const seenIds = new Set();
+
+  return normalizePairings(pairings).map((pair) => {
+    const nextPair = [];
+    pair.forEach((playerId) => {
+      if (!allowedIds.has(playerId) || seenIds.has(playerId) || nextPair.length >= 2) {
+        return;
+      }
+
+      seenIds.add(playerId);
+      nextPair.push(playerId);
+    });
+    return nextPair;
+  });
+}
+
+function serializePairingsForFirestore(pairings) {
+  return normalizePairings(pairings).reduce((accumulator, pair, index) => {
+    accumulator[PAIRING_KEYS[index]] = pair;
+    return accumulator;
+  }, {});
+}
+
+function countPairedPlayers(pairings) {
+  return normalizePairings(pairings).reduce((total, pair) => total + pair.length, 0);
+}
+
+function movePlayerToPair(pairings, playerId, targetPairIndex) {
+  const nextPairings = normalizePairings(pairings).map((pair) =>
+    pair.filter((entryPlayerId) => entryPlayerId !== playerId),
+  );
+
+  if (typeof targetPairIndex !== "number" || targetPairIndex < 0 || targetPairIndex >= nextPairings.length) {
+    return nextPairings;
+  }
+
+  if (!nextPairings[targetPairIndex].includes(playerId) && nextPairings[targetPairIndex].length < 2) {
+    nextPairings[targetPairIndex].push(playerId);
+  }
+
+  return nextPairings;
+}
+
+function removePlayerFromPairings(pairings, playerId) {
+  return normalizePairings(pairings).map((pair) =>
+    pair.filter((entryPlayerId) => entryPlayerId !== playerId),
+  );
+}
+
+function buildPlayerPersistencePayload(updates) {
+  const firstName = updates.firstName.trim();
+  const lastName = updates.lastName.trim();
+  const fullName = buildFullName(firstName, lastName);
+  const duprRaw = String(updates.dupr ?? "").trim();
+  const dupr = normalizeNullableNumber(duprRaw);
+  const skillLevel = normalizeSkillLevel(updates.skillLevel);
+
+  if (!firstName || !lastName) {
+    return { error: "First name and last name are required." };
+  }
+
+  if (duprRaw && dupr === null) {
+    return { error: "Enter a valid DUPR rating or leave it blank." };
+  }
+
+  if (dupr !== null && (dupr < 0 || dupr > 8)) {
+    return { error: "DUPR must be between 0 and 8." };
+  }
+
+  return {
+    firstName,
+    lastName,
+    fullName,
+    dupr,
+    skillLevel,
+  };
 }
 
 function normalizeMatchStatus(value) {
@@ -790,6 +945,8 @@ function normalizePlayer(docSnapshot) {
     lastName,
     fullName: data.fullName ?? buildFullName(firstName, lastName),
     active: data.active !== false,
+    dupr: normalizeNullableNumber(data.dupr),
+    skillLevel: normalizeSkillLevel(data.skillLevel),
     legacyNames: normalizeStringArray(data.legacyNames),
   };
 }
@@ -797,6 +954,7 @@ function normalizePlayer(docSnapshot) {
 function normalizeGame(docSnapshot) {
   const data = docSnapshot.data();
   const rosterPlayerIds = normalizeStringArray(data.rosterPlayerIds);
+  const pairings = sanitizePairings(data.pairings, rosterPlayerIds);
   const teamScore = normalizeNullableNumber(data.teamScore);
   const opponentScore = normalizeNullableNumber(data.opponentScore);
   const matchStatus = normalizeMatchStatus(data.matchStatus);
@@ -812,6 +970,7 @@ function normalizeGame(docSnapshot) {
     opponent: data.opponent ?? "Team Session",
     attendance: data.attendance ?? {},
     rosterPlayerIds,
+    pairings,
     matchStatus,
     teamScore,
     opponentScore,
@@ -861,6 +1020,10 @@ function buildSummary(game, playerList = getActivePlayers()) {
 
 function getRosterPlayerIds(game) {
   return normalizeStringArray(game.rosterPlayerIds);
+}
+
+function getPairings(game) {
+  return sanitizePairings(game.pairings, getRosterPlayerIds(game));
 }
 
 function getRosterPlayers(game) {
@@ -964,6 +1127,24 @@ function syncRosterBoardIndex() {
 
   if (rosterBoardIndex < 0 || rosterBoardIndex >= games.length) {
     rosterBoardIndex = findNextUpcomingGameIndex();
+  }
+}
+
+function syncPairingsAdminIndex() {
+  const signature = games.map((game) => game.id).join("\n");
+  if (signature !== lastPairingsAdminSignature) {
+    lastPairingsAdminSignature = signature;
+    pairingsAdminIndex = findNextUpcomingGameIndex();
+    return;
+  }
+
+  if (!games.length) {
+    pairingsAdminIndex = 0;
+    return;
+  }
+
+  if (pairingsAdminIndex < 0 || pairingsAdminIndex >= games.length) {
+    pairingsAdminIndex = findNextUpcomingGameIndex();
   }
 }
 
@@ -1443,6 +1624,419 @@ function buildRosterCardElement(game) {
   return fragment;
 }
 
+function buildPairingPlayerCard(player, options = {}) {
+  const card = document.createElement("article");
+  card.className = "pairing-player-card";
+  if (options.selected) {
+    card.classList.add("is-selected");
+  }
+  if (options.compact) {
+    card.classList.add("pairing-player-card--compact");
+  }
+  if (options.readonly) {
+    card.classList.add("pairing-player-card--readonly");
+  }
+
+  const header = document.createElement("div");
+  header.className = "pairing-player-card__header";
+
+  const identity = document.createElement("div");
+  identity.className = "pairing-player-card__identity";
+
+  const avatar = document.createElement("div");
+  avatar.className = "pairing-player-card__avatar";
+  avatar.textContent = buildPlayerInitials(player);
+
+  const copy = document.createElement("div");
+  const name = document.createElement("strong");
+  name.className = "pairing-player-card__name";
+  name.textContent = player.fullName;
+  const locationLabel = document.createElement("span");
+  locationLabel.className = "pairing-player-card__location";
+  locationLabel.textContent = options.locationLabel ?? "Roster pool";
+  copy.append(name, locationLabel);
+  identity.append(avatar, copy);
+  header.append(identity);
+
+  if (options.onRemove) {
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "action-btn pairing-player-card__remove";
+    removeButton.textContent = "Remove";
+    removeButton.disabled = Boolean(options.disabled);
+    removeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      options.onRemove();
+    });
+    header.append(removeButton);
+  }
+
+  const meta = document.createElement("div");
+  meta.className = "pairing-player-card__meta";
+
+  const duprChip = document.createElement("span");
+  duprChip.className = "pairing-player-card__meta-chip";
+  if (player.dupr === null || typeof player.dupr === "undefined") {
+    duprChip.classList.add("pairing-player-card__meta-chip--muted");
+    duprChip.textContent = "DUPR TBD";
+  } else {
+    duprChip.textContent = `DUPR ${formatDupr(player.dupr)}`;
+  }
+
+  const skillChip = document.createElement("span");
+  skillChip.className = "pairing-player-card__meta-chip";
+  if (normalizeSkillLevel(player.skillLevel)) {
+    skillChip.textContent = getSkillLevelLabel(player.skillLevel);
+  } else {
+    skillChip.classList.add("pairing-player-card__meta-chip--muted");
+    skillChip.textContent = "Skill TBD";
+  }
+
+  meta.append(duprChip, skillChip);
+  card.append(header, meta);
+
+  if (options.onSelect) {
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-pressed", String(Boolean(options.selected)));
+    card.addEventListener("click", () => {
+      options.onSelect();
+    });
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        options.onSelect();
+      }
+    });
+  }
+
+  if (options.draggable) {
+    card.draggable = true;
+    card.addEventListener("dragstart", (event) => {
+      event.dataTransfer?.setData("text/plain", player.id);
+      event.dataTransfer.effectAllowed = "move";
+      card.classList.add("is-dragging");
+    });
+    card.addEventListener("dragend", () => {
+      card.classList.remove("is-dragging");
+    });
+  }
+
+  return card;
+}
+
+function buildPairingsCardElement(game, options = {}) {
+  const card = document.createElement("article");
+  card.className = "game-card pairings-card";
+
+  const badge = getGameBadgeMeta(game);
+  const rosterPlayerIds = getRosterPlayerIds(game);
+  const rosterPlayers = sortPlayersByName(
+    rosterPlayerIds.map((playerId) => {
+      const player = getPlayerById(playerId);
+      return (
+        player ?? {
+          id: playerId,
+          firstName: "",
+          lastName: "",
+          fullName: "Former player",
+          dupr: null,
+          skillLevel: "",
+          active: false,
+        }
+      );
+    }),
+  );
+  const pairings = getPairings(game);
+  const interactive = options.interactive === true && isApprovedAdmin;
+  const pairedPlayerIds = new Set(pairings.flat());
+  const unpairedPlayers = rosterPlayers.filter((player) => !pairedPlayerIds.has(player.id));
+  const pairingsUnlocked = interactive && rosterPlayers.length === 8 && !savingState;
+  const selectedPairingPlayer = rosterPlayers.find((player) => player.id === selectedPairingPlayerId) ?? null;
+
+  const top = document.createElement("div");
+  top.className = "game-card__top";
+  const topCopy = document.createElement("div");
+  const date = document.createElement("p");
+  date.className = "game-card__date";
+  date.textContent = game.dateLabel;
+  const title = document.createElement("h3");
+  title.className = "game-card__title";
+  title.textContent = game.opponent;
+  const meta = document.createElement("p");
+  meta.className = "game-card__meta";
+  meta.textContent = `${game.timeLabel} • ${game.location}`;
+  topCopy.append(date, title, meta);
+
+  const badgeNode = document.createElement("span");
+  badgeNode.textContent = badge.label;
+  badgeNode.className = badge.className;
+  top.append(topCopy, badgeNode);
+
+  card.append(top);
+
+  if (!rosterPlayers.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No roster has been selected for this matchup yet.";
+    card.append(empty);
+    return card;
+  }
+
+  if (interactive) {
+    const helper = document.createElement("p");
+    helper.className = "roster-card__helper";
+    helper.textContent = pairingsUnlocked
+      ? "Drag players into any pair, or tap a player card and then use Add selected player."
+      : "Select exactly 8 players in Game Rosters to unlock matchup pairings.";
+    card.append(helper);
+
+    const layout = document.createElement("div");
+    layout.className = "pairings-layout";
+
+    const poolSection = document.createElement("section");
+    poolSection.className = "pairings-section";
+    const poolTitle = document.createElement("h4");
+    poolTitle.className = "pairings-section__title";
+    poolTitle.textContent = "Available to pair";
+    poolSection.append(poolTitle);
+
+    if (selectedPairingPlayer) {
+      const selectionBanner = document.createElement("div");
+      selectionBanner.className = "pairings-card__selection";
+      selectionBanner.textContent = `Selected: ${selectedPairingPlayer.fullName}`;
+      poolSection.append(selectionBanner);
+    }
+
+    const poolGrid = document.createElement("div");
+    poolGrid.className = "pairings-pool";
+    if (!unpairedPlayers.length) {
+      const emptyPool = document.createElement("div");
+      emptyPool.className = "pairings-pool__empty";
+      emptyPool.textContent = "Everyone is currently assigned to a pair.";
+      poolGrid.append(emptyPool);
+    } else {
+      unpairedPlayers.forEach((player) => {
+        poolGrid.append(
+          buildPairingPlayerCard(player, {
+            selected: selectedPairingPlayerId === player.id,
+            draggable: pairingsUnlocked,
+            disabled: !pairingsUnlocked,
+            onSelect: () => {
+              selectedPairingPlayerId = selectedPairingPlayerId === player.id ? "" : player.id;
+              renderAdminPairingsView();
+            },
+          }),
+        );
+      });
+    }
+    poolSection.append(poolGrid);
+
+    const pairsGrid = buildPairingsGrid(game, rosterPlayers, pairings, {
+      interactive,
+      pairingsUnlocked,
+      selectedPairingPlayer,
+      rerender: renderAdminPairingsView,
+    });
+
+    layout.append(poolSection, pairsGrid);
+    card.append(layout);
+    return card;
+  }
+
+  const pairsGrid = buildPairingsGrid(game, rosterPlayers, pairings, {
+    interactive: false,
+    pairingsUnlocked: false,
+    selectedPairingPlayer: null,
+    rerender: renderRosterView,
+  });
+  card.append(pairsGrid);
+
+  return card;
+}
+
+function buildPairingsGrid(game, rosterPlayers, pairings, options) {
+  const wrapper = options.interactive ? document.createElement("section") : document.createElement("div");
+  wrapper.className = options.interactive ? "pairings-section pairings-section--expanded" : "pairings-grid";
+  if (options.interactive) {
+    const pairsTitle = document.createElement("h4");
+    pairsTitle.className = "pairings-section__title";
+    pairsTitle.textContent = "Pairs";
+    wrapper.append(pairsTitle);
+  }
+
+  const pairsGrid = document.createElement("div");
+  pairsGrid.className = "pairings-grid";
+
+  pairings.forEach((pair, pairIndex) => {
+    const pairBox = document.createElement("section");
+    pairBox.className = "pair-box";
+    const pairPlayers = pair
+      .map((playerId) => rosterPlayers.find((entry) => entry.id === playerId))
+      .filter(Boolean);
+    const pairHasCompleteDupr =
+      pairPlayers.length === 2 && pairPlayers.every((player) => typeof player.dupr === "number");
+    const pairTeamDupr = pairHasCompleteDupr
+      ? pairPlayers.reduce((total, player) => total + player.dupr, 0)
+      : null;
+
+    const pairHeader = document.createElement("div");
+    pairHeader.className = "pair-box__header";
+    const pairTitleRow = document.createElement("div");
+    pairTitleRow.className = "pair-box__title-row";
+    const pairTitle = document.createElement("h5");
+    pairTitle.className = "pair-box__title";
+    pairTitle.textContent = `Pair ${pairIndex + 1}`;
+    const pairDupr = document.createElement("span");
+    pairDupr.className = "pair-box__team-dupr";
+    if (!pairHasCompleteDupr) {
+      pairDupr.classList.add("pair-box__team-dupr--muted");
+    }
+    pairDupr.textContent = `Team DUPR: ${formatTeamDupr(pairTeamDupr)}`;
+    pairTitleRow.append(pairTitle, pairDupr);
+    const pairStatus = document.createElement("span");
+    pairStatus.className = "pair-box__status";
+    pairStatus.textContent = `${pair.length}/2`;
+    pairHeader.append(pairTitleRow, pairStatus);
+
+    const pairBody = document.createElement("div");
+    pairBody.className = "pair-box__body";
+    if (options.pairingsUnlocked && pair.length < 2) {
+      pairBody.classList.add("pair-box__body--droppable");
+    }
+
+    if (options.pairingsUnlocked) {
+      pairBody.addEventListener("dragover", (event) => {
+        if (pair.length >= 2) {
+          return;
+        }
+        event.preventDefault();
+        pairBody.classList.add("is-drag-over");
+      });
+
+      pairBody.addEventListener("dragleave", () => {
+        pairBody.classList.remove("is-drag-over");
+      });
+
+      pairBody.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        pairBody.classList.remove("is-drag-over");
+        const playerId = event.dataTransfer?.getData("text/plain");
+        if (!playerId) {
+          return;
+        }
+
+        const nextPairings = movePlayerToPair(pairings, playerId, pairIndex);
+        const targetPair = nextPairings[pairIndex];
+        if (!targetPair.includes(playerId) || targetPair.length > 2) {
+          return;
+        }
+
+        selectedPairingPlayerId = "";
+        await updateGamePairings(game.id, nextPairings, getRosterPlayerIds(game));
+      });
+    }
+
+    if (pair.length) {
+      pair.forEach((playerId) => {
+        const player = rosterPlayers.find((entry) => entry.id === playerId);
+        if (!player) {
+          return;
+        }
+
+        pairBody.append(
+          buildPairingPlayerCard(player, {
+            compact: true,
+            locationLabel: `In Pair ${pairIndex + 1}`,
+            readonly: !options.interactive,
+            selected: options.interactive && selectedPairingPlayerId === player.id,
+            draggable: options.pairingsUnlocked,
+            disabled: !options.pairingsUnlocked,
+            onSelect: options.interactive
+              ? () => {
+                  selectedPairingPlayerId = selectedPairingPlayerId === player.id ? "" : player.id;
+                  options.rerender();
+                }
+              : undefined,
+            onRemove: options.interactive
+              ? async () => {
+                  selectedPairingPlayerId =
+                    selectedPairingPlayerId === player.id ? "" : selectedPairingPlayerId;
+                  await updateGamePairings(
+                    game.id,
+                    removePlayerFromPairings(pairings, player.id),
+                    getRosterPlayerIds(game),
+                  );
+                }
+              : undefined,
+          }),
+        );
+      });
+    } else {
+      const emptySlot = document.createElement("div");
+      emptySlot.className = "pair-box__empty";
+      emptySlot.textContent = options.interactive
+        ? options.pairingsUnlocked
+          ? "Drop players here"
+          : "Waiting for an 8-player roster"
+        : "Pair not set yet.";
+      pairBody.append(emptySlot);
+    }
+
+    if (options.interactive) {
+      const pairActions = document.createElement("div");
+      pairActions.className = "pair-box__actions";
+
+      const addSelectedButton = document.createElement("button");
+      addSelectedButton.type = "button";
+      addSelectedButton.className = "action-btn";
+      addSelectedButton.textContent = options.selectedPairingPlayer
+        ? "Add selected player"
+        : "Select a player";
+      const canAddSelectedPlayer =
+        Boolean(options.selectedPairingPlayer) &&
+        (pair.length < 2 || pair.includes(options.selectedPairingPlayer.id));
+      addSelectedButton.disabled = !options.pairingsUnlocked || !canAddSelectedPlayer;
+      addSelectedButton.addEventListener("click", async () => {
+        if (!options.selectedPairingPlayer) {
+          return;
+        }
+        selectedPairingPlayerId = "";
+        await updateGamePairings(
+          game.id,
+          movePlayerToPair(pairings, options.selectedPairingPlayer.id, pairIndex),
+          getRosterPlayerIds(game),
+        );
+      });
+
+      const clearButton = document.createElement("button");
+      clearButton.type = "button";
+      clearButton.className = "action-btn";
+      clearButton.textContent = "Clear pair";
+      clearButton.disabled = !options.pairingsUnlocked || !pair.length;
+      clearButton.addEventListener("click", async () => {
+        const nextPairings = normalizePairings(pairings);
+        nextPairings[pairIndex] = [];
+        await updateGamePairings(game.id, nextPairings, getRosterPlayerIds(game));
+      });
+
+      pairActions.append(addSelectedButton, clearButton);
+      pairBox.append(pairHeader, pairBody, pairActions);
+    } else {
+      pairBox.append(pairHeader, pairBody);
+    }
+    pairsGrid.append(pairBox);
+  });
+
+  if (options.interactive) {
+    wrapper.append(pairsGrid);
+  } else {
+    return pairsGrid;
+  }
+
+  return wrapper;
+}
+
 function createStandingCard(title, body, meta = "") {
   const card = document.createElement("article");
   card.className = "game-card standing-card";
@@ -1813,6 +2407,29 @@ function updateRosterPager() {
   rosterNext.disabled = rosterBoardIndex >= total - 1 || savingState;
 }
 
+function updatePairingsAdminPager() {
+  if (
+    !pairingsAdminPager ||
+    !pairingsAdminPagerLabel ||
+    !pairingsAdminPrev ||
+    !pairingsAdminNext
+  ) {
+    return;
+  }
+
+  const total = games.length;
+
+  if (total <= 1 || !isApprovedAdmin) {
+    pairingsAdminPager.classList.add("is-hidden");
+    return;
+  }
+
+  pairingsAdminPager.classList.remove("is-hidden");
+  pairingsAdminPagerLabel.textContent = `Matchup ${pairingsAdminIndex + 1} of ${total}`;
+  pairingsAdminPrev.disabled = pairingsAdminIndex <= 0 || savingState;
+  pairingsAdminNext.disabled = pairingsAdminIndex >= total - 1 || savingState;
+}
+
 function renderAvailabilityView() {
   if (!gamesGrid) {
     return;
@@ -1863,31 +2480,97 @@ function renderAvailabilityView() {
 }
 
 function renderRosterView() {
-  if (!rosterGrid) {
+  if (!rosterGrid || !pairingsGrid) {
     return;
   }
 
   syncRosterBoardIndex();
   rosterGrid.innerHTML = "";
+  pairingsGrid.innerHTML = "";
+
+  rosterTabButtons.forEach((button) => {
+    const isActive = button.dataset.rosterTab === rosterTab;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  rosterGrid.hidden = rosterTab !== "roster";
+  pairingsGrid.hidden = rosterTab !== "pairings";
 
   if (rosterViewEyebrow && rosterViewCopy) {
-    rosterViewEyebrow.textContent = isApprovedAdmin ? "Captain view" : "Team view";
-    rosterViewCopy.textContent = isApprovedAdmin
-      ? "Choose which active players are in for each matchup."
-      : "See who is playing in each matchup and who is not playing.";
+    if (rosterTab === "pairings") {
+      rosterViewEyebrow.textContent = isApprovedAdmin ? "Captain planning" : "Team view";
+      rosterViewCopy.textContent = isApprovedAdmin
+        ? "Set roster pairings for each matchup and compare the DUPR weight of every team."
+        : "See the saved pairings for each matchup and compare the DUPR weight of every team.";
+    } else {
+      rosterViewEyebrow.textContent = isApprovedAdmin ? "Captain view" : "Team view";
+      rosterViewCopy.textContent = isApprovedAdmin
+        ? "Choose which active players are in for each matchup."
+        : "See who is playing in each matchup and who is not playing.";
+    }
   }
 
   if (!games.length) {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
     empty.textContent = "No matchups are available for roster planning yet.";
-    rosterGrid.append(empty);
+    if (rosterTab === "pairings") {
+      pairingsGrid.append(empty);
+    } else {
+      rosterGrid.append(empty);
+    }
     updateRosterPager();
     return;
   }
 
-  rosterGrid.append(buildRosterCardElement(games[rosterBoardIndex]));
+  const activeGame = games[rosterBoardIndex];
+  if (rosterTab === "pairings") {
+    const activeRosterIds = new Set(getRosterPlayerIds(activeGame));
+    if (selectedPairingPlayerId && !activeRosterIds.has(selectedPairingPlayerId)) {
+      selectedPairingPlayerId = "";
+    }
+    pairingsGrid.append(buildPairingsCardElement(activeGame));
+  } else {
+    rosterGrid.append(buildRosterCardElement(activeGame));
+  }
   updateRosterPager();
+}
+
+function renderAdminPairingsView() {
+  if (!pairingsAdminGrid) {
+    return;
+  }
+
+  syncPairingsAdminIndex();
+  pairingsAdminGrid.innerHTML = "";
+
+  if (!isApprovedAdmin) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "Sign in with an approved admin account to manage matchup pairings.";
+    pairingsAdminGrid.append(empty);
+    updatePairingsAdminPager();
+    return;
+  }
+
+  if (!games.length) {
+    const empty = document.createElement("div");
+    empty.className = "games-grid__empty";
+    empty.textContent = "No matchups are available for pairings yet.";
+    pairingsAdminGrid.append(empty);
+    updatePairingsAdminPager();
+    return;
+  }
+
+  const activeGame = games[pairingsAdminIndex];
+  const activeRosterIds = new Set(getRosterPlayerIds(activeGame));
+  if (selectedPairingPlayerId && !activeRosterIds.has(selectedPairingPlayerId)) {
+    selectedPairingPlayerId = "";
+  }
+
+  pairingsAdminGrid.append(buildPairingsCardElement(activeGame, { interactive: true }));
+  updatePairingsAdminPager();
 }
 
 function renderTeamStandingView() {
@@ -2055,12 +2738,16 @@ function buildAdminPlayerCard(player, options = {}) {
   const actions = fragment.querySelector('[data-role="player-actions"]');
   const firstNameInput = fragment.querySelector('[data-role="first-name-input"]');
   const lastNameInput = fragment.querySelector('[data-role="last-name-input"]');
+  const duprInput = fragment.querySelector('[data-role="dupr-input"]');
+  const skillLevelInput = fragment.querySelector('[data-role="skill-level-input"]');
 
   title.textContent = options.title ?? player.fullName;
   meta.textContent = options.meta ?? "Update a player's name or remove them from the active list.";
   badge.textContent = player.active ? "Active" : "Inactive";
   firstNameInput.value = player.firstName;
   lastNameInput.value = player.lastName;
+  duprInput.value = player.dupr ?? "";
+  skillLevelInput.value = normalizeSkillLevel(player.skillLevel);
 
   return {
     card,
@@ -2068,6 +2755,8 @@ function buildAdminPlayerCard(player, options = {}) {
     actions,
     firstNameInput,
     lastNameInput,
+    duprInput,
+    skillLevelInput,
   };
 }
 
@@ -2100,6 +2789,8 @@ function buildExistingPlayerAdminCard(player) {
   resetButton.addEventListener("click", () => {
     adminCard.firstNameInput.value = player.firstName;
     adminCard.lastNameInput.value = player.lastName;
+    adminCard.duprInput.value = player.dupr ?? "";
+    adminCard.skillLevelInput.value = normalizeSkillLevel(player.skillLevel);
   });
 
   const saveButton = document.createElement("button");
@@ -2123,6 +2814,8 @@ function buildExistingPlayerAdminCard(player) {
     await updatePlayer(player, {
       firstName: adminCard.firstNameInput.value,
       lastName: adminCard.lastNameInput.value,
+      dupr: adminCard.duprInput.value,
+      skillLevel: adminCard.skillLevelInput.value,
     });
   });
 
@@ -2152,6 +2845,8 @@ function renderPlayersAdminControls() {
       lastName: "",
       fullName: "New player",
       active: true,
+      dupr: null,
+      skillLevel: "",
     },
     {
       title: "Add player",
@@ -2173,6 +2868,8 @@ function renderPlayersAdminControls() {
     await createPlayer({
       firstName: createCard.firstNameInput.value,
       lastName: createCard.lastNameInput.value,
+      dupr: createCard.duprInput.value,
+      skillLevel: createCard.skillLevelInput.value,
     });
   });
 
@@ -2771,12 +3468,18 @@ async function updateGameRoster(gameId, rosterPlayerIds) {
     return;
   }
 
+  const normalizedRosterPlayerIds = normalizeStringArray(rosterPlayerIds);
+  const game = games.find((item) => item.id === gameId);
+
   savingState = true;
   renderApp();
 
   try {
     await updateDoc(doc(db, "games", gameId), {
-      rosterPlayerIds: normalizeStringArray(rosterPlayerIds),
+      rosterPlayerIds: normalizedRosterPlayerIds,
+      pairings: serializePairingsForFirestore(
+        sanitizePairings(game?.pairings, normalizedRosterPlayerIds),
+      ),
       updatedAt: serverTimestamp(),
       updatedByAdmin: normalizeEmail(adminUser?.email),
     });
@@ -2784,6 +3487,36 @@ async function updateGameRoster(gameId, rosterPlayerIds) {
   } catch (error) {
     console.error(error);
     setAdminStatus("Could not save that roster selection right now.", "error");
+  } finally {
+    savingState = false;
+    renderApp();
+  }
+}
+
+async function updateGamePairings(gameId, pairings, rosterPlayerIds = null) {
+  if (!isApprovedAdmin) {
+    setAdminStatus("Sign in first to update matchup pairings.", "error");
+    return;
+  }
+
+  const game = games.find((item) => item.id === gameId);
+  const nextRosterPlayerIds = rosterPlayerIds ?? getRosterPlayerIds(game ?? {});
+
+  savingState = true;
+  renderApp();
+
+  try {
+    await updateDoc(doc(db, "games", gameId), {
+      pairings: serializePairingsForFirestore(
+        sanitizePairings(pairings, nextRosterPlayerIds),
+      ),
+      updatedAt: serverTimestamp(),
+      updatedByAdmin: normalizeEmail(adminUser?.email),
+    });
+    setAdminStatus("", "");
+  } catch (error) {
+    console.error(error);
+    setAdminStatus("Could not save those pairings right now.", "error");
   } finally {
     savingState = false;
     renderApp();
@@ -2877,6 +3610,7 @@ async function createGame(updates) {
       opponent: normalized.opponent,
       attendance: createDefaultAttendance(),
       rosterPlayerIds: [],
+      pairings: serializePairingsForFirestore(createEmptyPairings()),
       matchStatus: normalized.matchStatus,
       teamScore: normalized.teamScore,
       opponentScore: normalized.opponentScore,
@@ -2927,12 +3661,14 @@ async function createPlayer(updates) {
     return;
   }
 
-  const firstName = updates.firstName.trim();
-  const lastName = updates.lastName.trim();
-  const fullName = buildFullName(firstName, lastName);
-
-  if (!firstName || !lastName) {
-    setAdminStatus("First name and last name are required to create a player.", "error");
+  const normalized = buildPlayerPersistencePayload(updates);
+  if (normalized.error) {
+    setAdminStatus(
+      normalized.error === "First name and last name are required."
+        ? "First name and last name are required to create a player."
+        : normalized.error,
+      "error",
+    );
     return;
   }
 
@@ -2941,18 +3677,20 @@ async function createPlayer(updates) {
   renderApp();
 
   try {
-    const playerId = buildPlayerId(firstName, lastName);
+    const playerId = buildPlayerId(normalized.firstName, normalized.lastName);
     await setDoc(doc(db, "players", playerId), {
-      firstName,
-      lastName,
-      fullName,
-      legacyNames: [fullName],
+      firstName: normalized.firstName,
+      lastName: normalized.lastName,
+      fullName: normalized.fullName,
+      legacyNames: [normalized.fullName],
       active: true,
+      dupr: normalized.dupr,
+      skillLevel: normalized.skillLevel,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       updatedByAdmin: normalizeEmail(adminUser?.email),
     });
-    setAdminStatus(`${fullName} was added to the roster.`, "success");
+    setAdminStatus(`${normalized.fullName} was added to the roster.`, "success");
   } catch (error) {
     console.error(error);
     setAdminStatus("Could not add that player right now.", "error");
@@ -2968,12 +3706,9 @@ async function updatePlayer(player, updates) {
     return;
   }
 
-  const firstName = updates.firstName.trim();
-  const lastName = updates.lastName.trim();
-  const fullName = buildFullName(firstName, lastName);
-
-  if (!firstName || !lastName) {
-    setAdminStatus("First name and last name are required.", "error");
+  const normalized = buildPlayerPersistencePayload(updates);
+  if (normalized.error) {
+    setAdminStatus(normalized.error, "error");
     return;
   }
 
@@ -2982,17 +3717,21 @@ async function updatePlayer(player, updates) {
   renderApp();
 
   try {
-    const legacyNames = Array.from(new Set([...(player.legacyNames ?? []), player.fullName, fullName]));
+    const legacyNames = Array.from(
+      new Set([...(player.legacyNames ?? []), player.fullName, normalized.fullName]),
+    );
 
     await updateDoc(doc(db, "players", player.id), {
-      firstName,
-      lastName,
-      fullName,
+      firstName: normalized.firstName,
+      lastName: normalized.lastName,
+      fullName: normalized.fullName,
       legacyNames,
+      dupr: normalized.dupr,
+      skillLevel: normalized.skillLevel,
       updatedAt: serverTimestamp(),
       updatedByAdmin: normalizeEmail(adminUser?.email),
     });
-    setAdminStatus(`${fullName} was updated.`, "success");
+    setAdminStatus(`${normalized.fullName} was updated.`, "success");
   } catch (error) {
     console.error(error);
     setAdminStatus("Could not update that player right now.", "error");
@@ -3148,6 +3887,7 @@ function renderApp() {
   renderAvailabilityView();
   renderRosterView();
   renderTeamStandingView();
+  renderAdminPairingsView();
   renderPlayersAdminControls();
   renderGamesAdminControls();
   renderNewsAdminControls();
@@ -3209,6 +3949,13 @@ availabilityTabButtons.forEach((button) => {
   });
 });
 
+rosterTabButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    rosterTab = button.dataset.rosterTab === "pairings" ? "pairings" : "roster";
+    renderRosterView();
+  });
+});
+
 if (gamesPrev) {
   gamesPrev.addEventListener("click", () => {
     if (gameBoardIndex > 0) {
@@ -3241,6 +3988,24 @@ if (rosterNext) {
     if (rosterBoardIndex < games.length - 1) {
       rosterBoardIndex += 1;
       renderRosterView();
+    }
+  });
+}
+
+if (pairingsAdminPrev) {
+  pairingsAdminPrev.addEventListener("click", () => {
+    if (pairingsAdminIndex > 0) {
+      pairingsAdminIndex -= 1;
+      renderAdminPairingsView();
+    }
+  });
+}
+
+if (pairingsAdminNext) {
+  pairingsAdminNext.addEventListener("click", () => {
+    if (pairingsAdminIndex < games.length - 1) {
+      pairingsAdminIndex += 1;
+      renderAdminPairingsView();
     }
   });
 }
