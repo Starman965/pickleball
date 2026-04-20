@@ -204,7 +204,26 @@
             </section>
 
             <section class="panel panel--accent view-section" id="view-availability" hidden>
-              <div class="selector-row">
+              <div class="availability-tabs" aria-label="Availability views">
+                <button
+                  type="button"
+                  class="availability-tabs__button is-active"
+                  data-availability-tab="per-game"
+                  aria-pressed="true"
+                >
+                  Per Game
+                </button>
+                <button
+                  type="button"
+                  class="availability-tabs__button"
+                  data-availability-tab="summary"
+                  aria-pressed="false"
+                >
+                  Summary
+                </button>
+              </div>
+
+              <div class="selector-row" id="availability-selector-row">
                 <label class="field">
                   <span class="field__label">Player</span>
                   <select id="player-select" class="field__input">
@@ -213,8 +232,8 @@
                 </label>
               </div>
 
-              <p class="availability-helper">
-                Select your name to view your availibity per game. Mark your status by cycling through each game.
+              <p class="availability-helper" id="availability-helper">
+                Select your name to view your availability per game. Mark your status by cycling through each matchup.
               </p>
 
               <div class="status-banner is-hidden" id="status-banner" aria-live="polite">
@@ -371,6 +390,7 @@
           <p class="game-card__date" data-role="schedule-date"></p>
           <h3 class="game-card__title" data-role="schedule-title"></h3>
           <p class="game-card__meta" data-role="schedule-meta"></p>
+          <p class="game-card__meta schedule-card__summary" data-role="schedule-summary"></p>
         </div>
       </article>
     </template>

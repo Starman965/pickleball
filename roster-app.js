@@ -112,6 +112,12 @@ const PT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Los_Angeles",
 });
 
+const PT_SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  timeZone: "America/Los_Angeles",
+});
+
 const PT_TIME_LABEL_FORMATTER = new Intl.DateTimeFormat("en-US", {
   hour: "numeric",
   minute: "2-digit",
@@ -166,6 +172,9 @@ const scheduleGrid = document.getElementById("schedule-grid");
 const playerSelect = document.getElementById("player-select");
 const selectedPlayerName = document.getElementById("selected-player-name");
 const statusBanner = document.getElementById("status-banner");
+const availabilitySelectorRow = document.getElementById("availability-selector-row");
+const availabilityHelper = document.getElementById("availability-helper");
+const availabilityTabButtons = Array.from(document.querySelectorAll("[data-availability-tab]"));
 const gamesGrid = document.getElementById("games-grid");
 const gamesPager = document.getElementById("games-pager");
 const gamesPrev = document.getElementById("games-prev");
@@ -210,6 +219,7 @@ const playerTemplate = document.getElementById("player-row-template");
 let activeView = "news";
 let navOpen = false;
 let selectedPlayerId = "";
+let availabilityTab = "per-game";
 let players = [];
 let games = [];
 let newsPosts = [];
@@ -1134,12 +1144,144 @@ function renderPlayerSelect() {
 
 function buildScheduleCardElement(game) {
   const fragment = scheduleCardTemplate.content.cloneNode(true);
+  const summary = buildSummary(game);
+  const rosterPlayerIds = getRosterPlayerIds(game);
+  const summaryNode = fragment.querySelector('[data-role="schedule-summary"]');
 
   fragment.querySelector('[data-role="schedule-date"]').textContent = game.dateLabel;
   fragment.querySelector('[data-role="schedule-title"]').textContent = game.opponent;
   fragment.querySelector('[data-role="schedule-meta"]').textContent = `${game.timeLabel} • ${game.location}`;
+  const rosterStat = document.createElement("span");
+  rosterStat.textContent = `On Roster: ${rosterPlayerIds.length}`;
+  const availableStat = document.createElement("span");
+  availableStat.textContent = `Available: ${summary.in}`;
+  summaryNode.replaceChildren(rosterStat, availableStat);
 
   return fragment;
+}
+
+function updateAvailabilityTabUi() {
+  const showPerGame = availabilityTab === "per-game";
+
+  availabilityTabButtons.forEach((button) => {
+    const isActive = button.dataset.availabilityTab === availabilityTab;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  if (availabilitySelectorRow) {
+    availabilitySelectorRow.hidden = !showPerGame;
+  }
+
+  if (availabilityHelper) {
+    availabilityHelper.textContent = showPerGame
+      ? "Select your name to view your availability per game. Mark your status by cycling through each matchup."
+      : "Summary is read-only. Scroll sideways on smaller screens to compare who is available for each matchup.";
+  }
+}
+
+function getAvailabilitySummaryColumnLabel(game) {
+  if (game.dateTbd || !game.isoDate) {
+    return "TBD";
+  }
+
+  return PT_SHORT_DATE_FORMATTER.format(new Date(game.isoDate));
+}
+
+function buildAvailabilitySummaryStatusMeta(status) {
+  if (status === "in") {
+    return {
+      label: "In",
+      title: "Available",
+      className: "availability-summary-table__status availability-summary-table__status--in",
+    };
+  }
+  if (status === "out") {
+    return {
+      label: "Out",
+      title: "Unavailable",
+      className: "availability-summary-table__status availability-summary-table__status--out",
+    };
+  }
+
+  return {
+    label: "--",
+    title: "No response",
+    className: "availability-summary-table__status availability-summary-table__status--unknown",
+  };
+}
+
+function buildAvailabilitySummaryTable(activePlayers) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "availability-summary";
+
+  const scroll = document.createElement("div");
+  scroll.className = "availability-summary__scroll";
+
+  const table = document.createElement("table");
+  table.className = "availability-summary-table";
+
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  const playerHeader = document.createElement("th");
+  playerHeader.scope = "col";
+  playerHeader.textContent = "Player";
+  headerRow.append(playerHeader);
+
+  games.forEach((game) => {
+    const cell = document.createElement("th");
+    cell.scope = "col";
+    cell.textContent = getAvailabilitySummaryColumnLabel(game);
+    cell.title = `${game.dateLabel} • ${game.opponent}`;
+    headerRow.append(cell);
+  });
+
+  thead.append(headerRow);
+  table.append(thead);
+
+  const tbody = document.createElement("tbody");
+  sortPlayersByName(activePlayers).forEach((player) => {
+    const row = document.createElement("tr");
+    const playerCell = document.createElement("th");
+    playerCell.scope = "row";
+    playerCell.textContent = player.fullName;
+    row.append(playerCell);
+
+    games.forEach((game) => {
+      const status = getAttendanceStatus(game, player);
+      const statusMeta = buildAvailabilitySummaryStatusMeta(status);
+      const cell = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = statusMeta.className;
+      badge.textContent = statusMeta.label;
+      badge.title = `${player.fullName}: ${statusMeta.title}`;
+      cell.append(badge);
+      row.append(cell);
+    });
+
+    tbody.append(row);
+  });
+
+  const totalsRow = document.createElement("tr");
+  totalsRow.className = "availability-summary-table__totals";
+
+  const totalsLabel = document.createElement("th");
+  totalsLabel.scope = "row";
+  totalsLabel.textContent = "Total Available";
+  totalsRow.append(totalsLabel);
+
+  games.forEach((game) => {
+    const cell = document.createElement("td");
+    cell.textContent = String(buildSummary(game, activePlayers).in);
+    totalsRow.append(cell);
+  });
+
+  tbody.append(totalsRow);
+  table.append(tbody);
+  scroll.append(table);
+  wrapper.append(scroll);
+
+  return wrapper;
 }
 
 function buildAvailabilityCardElement(game, activePlayers) {
@@ -1392,6 +1534,18 @@ function renderScheduleView() {
 function buildTeamMemberCard(player) {
   const card = document.createElement("article");
   card.className = "game-card team-member-card";
+  const playerGameCounts = games.reduce(
+    (counts, game) => {
+      if (getAttendanceStatus(game, player) === "in") {
+        counts.available += 1;
+      }
+      if (getRosterPlayerIds(game).includes(player.id)) {
+        counts.played += 1;
+      }
+      return counts;
+    },
+    { available: 0, played: 0 },
+  );
 
   const top = document.createElement("div");
   top.className = "team-member-card__top";
@@ -1412,7 +1566,11 @@ function buildTeamMemberCard(player) {
 
   const meta = document.createElement("p");
   meta.className = "team-member-card__meta";
-  meta.textContent = player.active ? "Current team player" : "Not currently active";
+  const availableStat = document.createElement("span");
+  availableStat.textContent = `Available: ${playerGameCounts.available}`;
+  const playedStat = document.createElement("span");
+  playedStat.textContent = `Games Played: ${playerGameCounts.played}`;
+  meta.append(availableStat, playedStat);
 
   card.append(top, name, meta);
   return card;
@@ -1660,6 +1818,7 @@ function renderAvailabilityView() {
     return;
   }
 
+  updateAvailabilityTabUi();
   syncGameBoardIndex();
   gamesGrid.innerHTML = "";
   const activePlayers = getActivePlayers();
@@ -1669,7 +1828,9 @@ function renderAvailabilityView() {
     empty.className = "games-grid__empty";
     empty.textContent = "No matchups are scheduled yet.";
     gamesGrid.append(empty);
-    updateGamesPager();
+    if (gamesPager) {
+      gamesPager.classList.add("is-hidden");
+    }
     return;
   }
 
@@ -1678,7 +1839,17 @@ function renderAvailabilityView() {
     empty.className = "games-grid__empty";
     empty.textContent = "No active players are on the roster yet. An admin can add players in Admin.";
     gamesGrid.append(empty);
-    updateGamesPager();
+    if (gamesPager) {
+      gamesPager.classList.add("is-hidden");
+    }
+    return;
+  }
+
+  if (availabilityTab === "summary") {
+    gamesGrid.append(buildAvailabilitySummaryTable(activePlayers));
+    if (gamesPager) {
+      gamesPager.classList.add("is-hidden");
+    }
     return;
   }
 
@@ -2574,8 +2745,6 @@ async function updateAttendance(gameId, playerId, status) {
   }
 
   savingState = true;
-  const player = getPlayerById(playerId);
-  setStatus(`Saving ${player?.fullName ?? "player"}'s response...`, "warning");
   renderApp();
 
   try {
@@ -2583,7 +2752,7 @@ async function updateAttendance(gameId, playerId, status) {
       [`attendance.${playerId}`]: status,
       updatedAt: serverTimestamp(),
     });
-    setStatus(`${player?.fullName ?? "Player"}'s availability was updated.`, "success");
+    setStatus("", "");
   } catch (error) {
     console.error(error);
     setStatus(
@@ -2603,7 +2772,6 @@ async function updateGameRoster(gameId, rosterPlayerIds) {
   }
 
   savingState = true;
-  setAdminStatus("Saving roster selection...", "warning");
   renderApp();
 
   try {
@@ -2612,7 +2780,7 @@ async function updateGameRoster(gameId, rosterPlayerIds) {
       updatedAt: serverTimestamp(),
       updatedByAdmin: normalizeEmail(adminUser?.email),
     });
-    setAdminStatus("Roster selection saved.", "success");
+    setAdminStatus("", "");
   } catch (error) {
     console.error(error);
     setAdminStatus("Could not save that roster selection right now.", "error");
@@ -3033,6 +3201,13 @@ if (playerSelect) {
     renderApp();
   });
 }
+
+availabilityTabButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    availabilityTab = button.dataset.availabilityTab === "summary" ? "summary" : "per-game";
+    renderAvailabilityView();
+  });
+});
 
 if (gamesPrev) {
   gamesPrev.addEventListener("click", () => {
