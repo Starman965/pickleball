@@ -1713,17 +1713,19 @@ function buildPairingPlayerCard(player, options = {}) {
   } else {
     duprChip.textContent = `DUPR ${formatDupr(player.dupr)}`;
   }
+  meta.append(duprChip);
 
-  const skillChip = document.createElement("span");
-  skillChip.className = "pairing-player-card__meta-chip";
-  if (normalizeSkillLevel(player.skillLevel)) {
-    skillChip.textContent = getSkillLevelLabel(player.skillLevel);
-  } else {
-    skillChip.classList.add("pairing-player-card__meta-chip--muted");
-    skillChip.textContent = "Skill TBD";
+  if (options.showSkill !== false) {
+    const skillChip = document.createElement("span");
+    skillChip.className = "pairing-player-card__meta-chip";
+    if (normalizeSkillLevel(player.skillLevel)) {
+      skillChip.textContent = getSkillLevelLabel(player.skillLevel);
+    } else {
+      skillChip.classList.add("pairing-player-card__meta-chip--muted");
+      skillChip.textContent = "Skill TBD";
+    }
+    meta.append(skillChip);
   }
-
-  meta.append(duprChip, skillChip);
   card.append(header, meta);
 
   if (options.onSelect) {
@@ -1980,6 +1982,7 @@ function buildPairingsGrid(game, rosterPlayers, pairings, options) {
             compact: true,
             locationLabel: `In Pair ${pairIndex + 1}`,
             readonly: !options.interactive,
+            showSkill: options.interactive,
             selected: options.interactive && selectedPairingPlayerId === player.id,
             draggable: options.pairingsUnlocked,
             disabled: !options.pairingsUnlocked,
