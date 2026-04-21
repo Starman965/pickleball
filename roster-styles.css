@@ -1200,6 +1200,25 @@ select.field__input option {
   font-weight: 700;
 }
 
+.roster-chip__content {
+  display: grid;
+  gap: 0.12rem;
+  text-align: left;
+}
+
+.roster-chip__label {
+  display: block;
+  line-height: 1.1;
+}
+
+.roster-chip__meta {
+  display: block;
+  color: rgba(247, 249, 252, 0.72);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.1;
+ }
+
 .roster-chip--button {
   cursor: pointer;
   transition:

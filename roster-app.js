@@ -80,10 +80,9 @@ const VIEW_META = {
   },
   roster: {
     label: "Game Rosters",
-    eyebrow: "Captain planning",
+    eyebrow: "Team view",
     title: "Game Rosters",
-    copy:
-      "Select who is in for each matchup and keep the captain roster visible alongside availability counts.",
+    copy: "See the saved pairings for each matchup and compare the DUPR weight of every team.",
   },
   team: {
     label: "Team Standing",
@@ -93,10 +92,11 @@ const VIEW_META = {
       "Final matchup scores roll up into win-loss tracking against each opponent as results are entered.",
   },
   "pairings-admin": {
-    label: "Pairings Mgmt",
+    label: "Roster Mgmt",
     eyebrow: "Operations",
-    title: "Pairings Mgmt",
-    copy: "Assign rostered players into matchup pairs and compare DUPR totals before match day.",
+    title: "Roster Mgmt",
+    copy:
+      "Step 1: Pick the eight players for the scheduled day. Step 2: Go to Pairings and assign teams for the 8 players.",
   },
   "player-admin": {
     label: "Player Mgmt",
@@ -105,9 +105,9 @@ const VIEW_META = {
     copy: "Add players, update names, and manage who is active on the team.",
   },
   "schedule-admin": {
-    label: "Schedule Mgmt",
+    label: "Schedule + Scores",
     eyebrow: "Operations",
-    title: "Schedule Mgmt",
+    title: "Schedule + Scores",
     copy: "Create matchups, update details, and enter final scores.",
   },
   "news-admin": {
@@ -202,8 +202,9 @@ const rosterNext = document.getElementById("roster-next");
 const rosterPagerLabel = document.getElementById("roster-pager-label");
 const rosterViewEyebrow = document.getElementById("roster-view-eyebrow");
 const rosterViewCopy = document.getElementById("roster-view-copy");
-const rosterTabButtons = Array.from(document.querySelectorAll("[data-roster-tab]"));
 const pairingsGrid = document.getElementById("pairings-grid");
+const adminRosterTabButtons = Array.from(document.querySelectorAll("[data-admin-roster-tab]"));
+const rosterAdminGrid = document.getElementById("roster-admin-grid");
 const pairingsAdminGrid = document.getElementById("pairings-admin-grid");
 const pairingsAdminPager = document.getElementById("pairings-admin-pager");
 const pairingsAdminPrev = document.getElementById("pairings-admin-prev");
@@ -260,7 +261,7 @@ let playerAdminIndex = 0;
 let lastPlayersSignature = "";
 let adminUser = null;
 let isApprovedAdmin = false;
-let rosterTab = "roster";
+let adminRosterTab = "roster";
 let selectedPairingPlayerId = "";
 let lastAuthFlowEvent = "No Firebase auth event yet";
 let lastAuthStateEvent = "Firebase auth state has not reported yet";
@@ -1213,7 +1214,22 @@ function createRosterGroup(title, players, emptyMessage, options = {}) {
       if (player.chipClassName) {
         chip.classList.add(player.chipClassName);
       }
-      chip.textContent = `${player.chipPrefix ?? ""}${player.fullName}`;
+      const content = document.createElement("span");
+      content.className = "roster-chip__content";
+
+      const label = document.createElement("span");
+      label.className = "roster-chip__label";
+      label.textContent = `${player.chipPrefix ?? ""}${player.fullName}`;
+      content.append(label);
+
+      if (player.metaText) {
+        const meta = document.createElement("span");
+        meta.className = "roster-chip__meta";
+        meta.textContent = player.metaText;
+        content.append(meta);
+      }
+
+      chip.append(content);
       if (options.interactive) {
         chip.type = "button";
         chip.classList.add("roster-chip--button");
@@ -1237,6 +1253,15 @@ function createRosterGroup(title, players, emptyMessage, options = {}) {
 
 function sortPlayersByName(playerList) {
   return [...playerList].sort((left, right) => left.fullName.localeCompare(right.fullName));
+}
+
+function buildRosterChipMetaText(player) {
+  const duprLabel =
+    typeof player.dupr === "number" ? `DUPR ${formatDupr(player.dupr)}` : "DUPR TBD";
+  const skillLabel = normalizeSkillLevel(player.skillLevel)
+    ? getSkillLevelLabel(player.skillLevel)
+    : "Skill TBD";
+  return `${duprLabel} • ${skillLabel}`;
 }
 
 function getGameBadgeMeta(game) {
@@ -1565,6 +1590,9 @@ function buildRosterCardElement(game) {
       return {
         id: playerId,
         fullName: player?.fullName ?? "Former player",
+        dupr: player?.dupr ?? null,
+        skillLevel: player?.skillLevel ?? "",
+        metaText: isApprovedAdmin && player ? buildRosterChipMetaText(player) : "",
         availabilityStatus,
         ...buildRosterStatusChipMeta(availabilityStatus),
       };
@@ -1579,6 +1607,9 @@ function buildRosterCardElement(game) {
         return {
           id: player.id,
           fullName: player.fullName,
+          dupr: player.dupr,
+          skillLevel: player.skillLevel,
+          metaText: isApprovedAdmin ? buildRosterChipMetaText(player) : "",
           availabilityStatus,
           ...buildRosterStatusChipMeta(availabilityStatus),
         };
@@ -2480,76 +2511,64 @@ function renderAvailabilityView() {
 }
 
 function renderRosterView() {
-  if (!rosterGrid || !pairingsGrid) {
+  if (!pairingsGrid) {
     return;
   }
 
   syncRosterBoardIndex();
-  rosterGrid.innerHTML = "";
   pairingsGrid.innerHTML = "";
 
-  rosterTabButtons.forEach((button) => {
-    const isActive = button.dataset.rosterTab === rosterTab;
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", String(isActive));
-  });
-
-  rosterGrid.hidden = rosterTab !== "roster";
-  pairingsGrid.hidden = rosterTab !== "pairings";
-
   if (rosterViewEyebrow && rosterViewCopy) {
-    if (rosterTab === "pairings") {
-      rosterViewEyebrow.textContent = isApprovedAdmin ? "Captain planning" : "Team view";
-      rosterViewCopy.textContent = isApprovedAdmin
-        ? "Set roster pairings for each matchup and compare the DUPR weight of every team."
-        : "See the saved pairings for each matchup and compare the DUPR weight of every team.";
-    } else {
-      rosterViewEyebrow.textContent = isApprovedAdmin ? "Captain view" : "Team view";
-      rosterViewCopy.textContent = isApprovedAdmin
-        ? "Choose which active players are in for each matchup."
-        : "See who is playing in each matchup and who is not playing.";
-    }
+    rosterViewEyebrow.textContent = "Team view";
+    rosterViewCopy.textContent =
+      "See the saved pairings for each matchup and compare the DUPR weight of every team.";
   }
 
   if (!games.length) {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
     empty.textContent = "No matchups are available for roster planning yet.";
-    if (rosterTab === "pairings") {
-      pairingsGrid.append(empty);
-    } else {
-      rosterGrid.append(empty);
-    }
+    pairingsGrid.append(empty);
     updateRosterPager();
     return;
   }
 
   const activeGame = games[rosterBoardIndex];
-  if (rosterTab === "pairings") {
-    const activeRosterIds = new Set(getRosterPlayerIds(activeGame));
-    if (selectedPairingPlayerId && !activeRosterIds.has(selectedPairingPlayerId)) {
-      selectedPairingPlayerId = "";
-    }
-    pairingsGrid.append(buildPairingsCardElement(activeGame));
-  } else {
-    rosterGrid.append(buildRosterCardElement(activeGame));
+  const activeRosterIds = new Set(getRosterPlayerIds(activeGame));
+  if (selectedPairingPlayerId && !activeRosterIds.has(selectedPairingPlayerId)) {
+    selectedPairingPlayerId = "";
   }
+  pairingsGrid.append(buildPairingsCardElement(activeGame));
   updateRosterPager();
 }
 
 function renderAdminPairingsView() {
-  if (!pairingsAdminGrid) {
+  if (!pairingsAdminGrid || !rosterAdminGrid) {
     return;
   }
 
   syncPairingsAdminIndex();
+  rosterAdminGrid.innerHTML = "";
   pairingsAdminGrid.innerHTML = "";
+
+  adminRosterTabButtons.forEach((button) => {
+    const isActive = button.dataset.adminRosterTab === adminRosterTab;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  rosterAdminGrid.hidden = adminRosterTab !== "roster";
+  pairingsAdminGrid.hidden = adminRosterTab !== "pairings";
 
   if (!isApprovedAdmin) {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
     empty.textContent = "Sign in with an approved admin account to manage matchup pairings.";
-    pairingsAdminGrid.append(empty);
+    if (adminRosterTab === "pairings") {
+      pairingsAdminGrid.append(empty);
+    } else {
+      rosterAdminGrid.append(empty);
+    }
     updatePairingsAdminPager();
     return;
   }
@@ -2558,7 +2577,11 @@ function renderAdminPairingsView() {
     const empty = document.createElement("div");
     empty.className = "games-grid__empty";
     empty.textContent = "No matchups are available for pairings yet.";
-    pairingsAdminGrid.append(empty);
+    if (adminRosterTab === "pairings") {
+      pairingsAdminGrid.append(empty);
+    } else {
+      rosterAdminGrid.append(empty);
+    }
     updatePairingsAdminPager();
     return;
   }
@@ -2569,7 +2592,11 @@ function renderAdminPairingsView() {
     selectedPairingPlayerId = "";
   }
 
-  pairingsAdminGrid.append(buildPairingsCardElement(activeGame, { interactive: true }));
+  if (adminRosterTab === "pairings") {
+    pairingsAdminGrid.append(buildPairingsCardElement(activeGame, { interactive: true }));
+  } else {
+    rosterAdminGrid.append(buildRosterCardElement(activeGame));
+  }
   updatePairingsAdminPager();
 }
 
@@ -3564,7 +3591,7 @@ async function updateGameDetails(gameId, updates) {
       updatedAt: serverTimestamp(),
       updatedByAdmin: normalizeEmail(adminUser?.email),
     });
-    setAdminStatus("Matchup details saved to Firebase.", "success");
+    setAdminStatus("", "");
   } catch (error) {
     console.error(error);
     setAdminStatus("Could not save those changes right now.", "error");
@@ -3731,7 +3758,7 @@ async function updatePlayer(player, updates) {
       updatedAt: serverTimestamp(),
       updatedByAdmin: normalizeEmail(adminUser?.email),
     });
-    setAdminStatus(`${normalized.fullName} was updated.`, "success");
+    setAdminStatus("", "");
   } catch (error) {
     console.error(error);
     setAdminStatus("Could not update that player right now.", "error");
@@ -3762,7 +3789,7 @@ async function setPlayerActiveState(playerId, active, fullName) {
       selectedPlayerId = "";
     }
 
-    setAdminStatus(`${fullName} is now ${active ? "active" : "inactive"}.`, "success");
+    setAdminStatus("", "");
   } catch (error) {
     console.error(error);
     setAdminStatus("Could not update that player right now.", "error");
@@ -3949,10 +3976,10 @@ availabilityTabButtons.forEach((button) => {
   });
 });
 
-rosterTabButtons.forEach((button) => {
+adminRosterTabButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    rosterTab = button.dataset.rosterTab === "pairings" ? "pairings" : "roster";
-    renderRosterView();
+    adminRosterTab = button.dataset.adminRosterTab === "pairings" ? "pairings" : "roster";
+    renderAdminPairingsView();
   });
 });
 

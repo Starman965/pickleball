@@ -60,10 +60,10 @@
           <button type="button" class="nav-link" data-view-target="roster">
             Game Rosters
           </button>
-          <p class="side-nav__section-title" id="nav-admin-section-title" hidden>Admin</p>
           <button type="button" class="nav-link" data-view-target="team">
             Team Standing
           </button>
+          <p class="side-nav__section-title" id="nav-admin-section-title" hidden>Admin</p>
           <button
             type="button"
             class="nav-link"
@@ -71,7 +71,7 @@
             data-view-target="pairings-admin"
             hidden
           >
-            Pairings Mgmt
+            Roster Mgmt
           </button>
           <button
             type="button"
@@ -89,7 +89,7 @@
             data-view-target="schedule-admin"
             hidden
           >
-            Schedule Mgmt
+            Schedule + Scores
           </button>
           <button
             type="button"
@@ -272,31 +272,12 @@
             <section class="panel view-section" id="view-roster" hidden>
               <div class="panel__header">
                 <div>
-                  <p class="panel__eyebrow" id="roster-view-eyebrow">Captain view</p>
+                  <p class="panel__eyebrow" id="roster-view-eyebrow">Team view</p>
                   <h2>Game Rosters</h2>
                 </div>
                 <p class="panel__copy" id="roster-view-copy">
-                  Choose which active players are in for each matchup. Phase 1 uses the current admin login for roster edits.
+                  See the saved pairings for each matchup and compare the DUPR weight of every team.
                 </p>
-              </div>
-
-              <div class="availability-tabs" aria-label="Game roster views">
-                <button
-                  type="button"
-                  class="availability-tabs__button is-active"
-                  data-roster-tab="roster"
-                  aria-pressed="true"
-                >
-                  Roster
-                </button>
-                <button
-                  type="button"
-                  class="availability-tabs__button"
-                  data-roster-tab="pairings"
-                  aria-pressed="false"
-                >
-                  Pairings
-                </button>
               </div>
 
               <div class="games-board">
@@ -314,8 +295,7 @@
                     Next
                   </button>
                 </div>
-                <div id="roster-grid" class="games-board__view"></div>
-                <div id="pairings-grid" class="games-board__view" hidden></div>
+                <div id="pairings-grid" class="games-board__view"></div>
               </div>
             </section>
 
@@ -340,11 +320,30 @@
               <div class="panel__header">
                 <div>
                   <p class="panel__eyebrow">Operations</p>
-                  <h2>Pairings Mgmt</h2>
+                  <h2>Roster Mgmt</h2>
                 </div>
                 <p class="panel__copy">
-                  Assign rostered players into matchup pairs and use DUPR totals to balance teams.
+                  Step 1: Pick the eight players for the scheduled day. Step 2: Go to Pairings and assign teams for the 8 players.
                 </p>
+              </div>
+
+              <div class="availability-tabs" aria-label="Roster management views">
+                <button
+                  type="button"
+                  class="availability-tabs__button is-active"
+                  data-admin-roster-tab="roster"
+                  aria-pressed="true"
+                >
+                  Roster
+                </button>
+                <button
+                  type="button"
+                  class="availability-tabs__button"
+                  data-admin-roster-tab="pairings"
+                  aria-pressed="false"
+                >
+                  Pairings
+                </button>
               </div>
 
               <div class="games-board">
@@ -362,6 +361,7 @@
                     Next
                   </button>
                 </div>
+                <div id="roster-admin-grid" class="games-board__view"></div>
                 <div id="pairings-admin-grid" class="games-board__view"></div>
               </div>
             </section>
@@ -633,7 +633,7 @@
               max="8"
               step="0.001"
               data-role="dupr-input"
-              placeholder="3.75"
+              placeholder="x.xxx"
             />
           </label>
 
