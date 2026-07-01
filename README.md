@@ -1,4 +1,5 @@
-# pickleball
-Blackhawk Pickleball
-Site Created and Managed by David Lewis
-Pickleball Tracker app created and published by David Lewis
+# Blackhawk Pickleball Apps
+
+Static website for blackhawkpickle.com.
+
+Created and managed by David Lewis. Supports both PaddleUp and Pickleball Tracker.

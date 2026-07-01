@@ -3,260 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pickleball Tracker - Pickleball Score Tracker & Stats (iPhone + Apple Watch)</title>
-    <meta name="description" content="Log pickleball scores in seconds and instantly see win rate, point margin, trends, and more. Built for iPhone + Apple Watch. Join a passionate pickleball community.">
-    <meta name="keywords" content="pickleball tracker, pickleball score tracker, pickleball score keeper, pickleball stats, pickleball analytics, pickleball match log, DUPR, win rate, point margin, apple watch pickleball, iPhone pickleball app">
-    <meta name="theme-color" content="#007AFF">
-    <meta name="format-detection" content="telephone=no">
-    
-    <!-- Favicon and App Icons -->
-    <link rel="icon" type="image/png" href="pickleball_tracker_splash_icon.png">
-    <link rel="apple-touch-icon" href="pickleball_tracker_splash_icon.png">
-    
-    <!-- Performance hints -->
-    <link rel="preconnect" href="https://apps.apple.com">
-    <link rel="preconnect" href="https://developer.apple.com">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Pickleball Tracker">
-    <meta property="og:url" content="https://www.blackhawkpickle.com/">
-    <meta property="og:title" content="Pickleball Tracker - Pickleball Score Tracker & Stats (iPhone + Apple Watch)">
-    <meta property="og:description" content="Log scores fast. See win rate, point margin, trends, and more. Built for iPhone + Apple Watch.">
-    <meta property="og:image" content="https://www.blackhawkpickle.com/pickleball_tracker_splash_icon.png">
-    <meta property="og:image:width" content="1024">
-    <meta property="og:image:height" content="1024">
-    <meta property="og:image:alt" content="Pickleball Tracker App Icon">
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:url" content="https://www.blackhawkpickle.com/">
-    <meta name="twitter:title" content="Pickleball Tracker - Pickleball Score Tracker & Stats (iPhone + Apple Watch)">
-    <meta name="twitter:description" content="Log scores fast. See win rate, point margin, trends, and more. Built for iPhone + Apple Watch.">
-    <meta name="twitter:image" content="https://www.blackhawkpickle.com/pickleball_tracker_splash_icon.png">
-    <meta name="twitter:image:alt" content="Pickleball Tracker App Icon">
-
-    <!-- Additional SEO -->
+    <title>Blackhawk Pickleball Apps - PaddleUp and Pickleball Tracker</title>
+    <meta name="description" content="Discover two pickleball apps from David Lewis: PaddleUp helps players find games faster, while Pickleball Tracker helps players log matches and improve over time.">
+    <meta name="keywords" content="pickleball apps, PaddleUp, Pickleball Tracker, find pickleball games, pickleball match maker, pickleball score tracker, pickleball stats">
     <meta name="author" content="David Lewis">
     <meta name="robots" content="index, follow">
-    <meta name="application-name" content="Pickleball Tracker">
-    <meta name="apple-itunes-app" content="app-id=6744275703">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.blackhawkpickle.com/">
+    <meta property="og:title" content="Blackhawk Pickleball Apps">
+    <meta property="og:description" content="Find games faster with PaddleUp. Track your progress with Pickleball Tracker.">
+    <meta property="og:image" content="https://www.blackhawkpickle.com/paddleup_images/paddleup_logo.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Blackhawk Pickleball Apps">
+    <meta name="twitter:description" content="Two apps built for pickleball players: PaddleUp and Pickleball Tracker.">
+    <meta name="twitter:image" content="https://www.blackhawkpickle.com/paddleup_images/paddleup_logo.png">
+    <link rel="icon" type="image/png" href="paddleup_images/paddleup_logo.png">
+    <link rel="apple-touch-icon" href="paddleup_images/paddleup_logo.png">
     <link rel="canonical" href="https://www.blackhawkpickle.com/">
-    
-    <!-- Structured data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "WebSite",
-          "name": "Pickleball Tracker",
-          "url": "https://www.blackhawkpickle.com/"
-        },
-        {
-          "@type": "Organization",
-          "name": "Pickleball Tracker",
-          "url": "https://www.blackhawkpickle.com/",
-          "founder": "David Lewis"
-        },
-        {
-          "@type": "SoftwareApplication",
-          "name": "Pickleball Tracker",
-          "applicationCategory": "SportsApplication",
-          "operatingSystem": "iOS, watchOS",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "downloadUrl": "https://apps.apple.com/us/app/pickleball-tracker/id6744275703"
-        },
-        {
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "How fast can I log a game?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Most games can be logged in seconds—pick players, set final score, and save."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Does it work with Apple Watch?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes. Pickleball Tracker includes an Apple Watch companion for quick game entry from your wrist."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "What stats do I get?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Win rate, point margin, points scored/allowed, close-game performance, Top Players, and more."
-              }
-            }
-          ]
-        }
-      ]
-    }
-    </script>
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <h1>Pickleball Tracker</h1>
-        <p class="subtitle">Play. Track. Improve. Repeat.</p>
-        <div class="version-row">
-            <img src="pickleball_tracker_splash_icon.png" alt="Pickleball Tracker App Icon" class="header-logo">
-            <p class="version-badge">v2.5</p>
+    <header class="site-header">
+        <div class="header-inner">
+            <p class="eyebrow">Blackhawk Pickleball Apps</p>
+            <h1>Two apps for getting more out of every pickleball session.</h1>
+            <p class="subtitle">Use PaddleUp to find games faster. Use Pickleball Tracker to log matches, follow your progress, and improve over time.</p>
+            <div class="hero-actions">
+                <a href="#paddleup" class="button primary">Explore PaddleUp</a>
+                <a href="#tracker" class="button secondary">Explore Pickleball Tracker</a>
+            </div>
         </div>
     </header>
 
     <nav>
         <a href="index.html" class="active">Home</a>
-        <a href="pbm.html">Tournament Manager</a>
         <a href="support.html">Support</a>
         <a href="feedback.html">Feedback</a>
         <a href="about.html">About</a>
         <a href="privacy.html">Privacy</a>
     </nav>
 
-    <div class="container">
-        <div class="hero-app-wrapper">
-            <section class="hero-section">
-                <img src="pickleball_tracker_app_user.png" alt="Pickleball player showing the Pickleball Tracker app" class="hero-image">
-            </section>
-
-            <section class="app-section">
-                <h2>Log games in seconds. Get better every week.</h2>
-                <p class="lead">Track scores fast, then see win rate, point margin, and trends that tell you exactly what to work on next.</p>
-                
-                <ul class="feature-bullets">
-                    <li><strong>Instant insights:</strong> win rate, point margin, close games, scoring trends.</li>
-                    <li><strong>Top Players:</strong> best teammates + toughest opponents, with clear “why” stats.</li>
-                    <li><strong>Player profiles:</strong> view performance for anyone in your roster.</li>
-                    <li><strong>Apple Watch:</strong> quick game entry right from your wrist.</li>
+    <main class="container">
+        <section class="app-showcase" id="paddleup">
+            <div class="app-copy">
+                <div class="app-title-row">
+                    <img src="paddleup_images/paddleup_logo.png" alt="PaddleUp app icon" class="app-icon">
+                    <div>
+                        <p class="eyebrow">New</p>
+                        <h2>PaddleUp</h2>
+                    </div>
+                </div>
+                <h3>Less texting. More playing.</h3>
+                <p>PaddleUp helps pickleball players turn “Who wants to play?” into a real match. Create open or private games, choose singles or doubles, invite your favorite players or groups, and get alerts as games come together.</p>
+                <ul class="feature-list">
+                    <li>Create open matches for nearby players to join</li>
+                    <li>Set up private matches with friends or groups</li>
+                    <li>Coordinate singles or doubles with match notes, court assignment, and time updates</li>
+                    <li>Stay informed with game alerts as players join and details change</li>
                 </ul>
-                
-                <div class="cta-row">
-                    <a class="cta-link" href="https://apps.apple.com/us/app/pickleball-tracker/id6744275703" aria-label="Download Pickleball Tracker on the App Store">
-                        <img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg"
-                             alt="Download on the App Store"
-                             class="app-store-badge">
-                    </a>
-                    <a class="cta-secondary" href="#community">Join the community</a>
-                </div>
+                <p class="small-note">PaddleUp is designed for clubs, resorts, neighborhoods, and pickleball communities where players want a faster way to get on court.</p>
+            </div>
+            <div class="phone-gallery featured-gallery">
+                <img src="paddleup_images/1.png" alt="PaddleUp home screen">
+                <img src="paddleup_images/2.png" alt="PaddleUp match creation screen">
+                <img src="paddleup_images/3.png" alt="PaddleUp match details screen">
+            </div>
+        </section>
 
-                <p class="trust-line">Made by a pickleball player. Built with care. Updated frequently.</p>
-            </section>
-        </div>
-
-        <div class="feature-section">
-            <h2>Available for iPhone and Apple Watch!</h2>
-            <div class="device-section">
-                <div class="device-item">
-                    <div class="device-icon">
-                        <img src="pickleball_tracker_apple_iphone.png" alt="Pickleball Tracker on iPhone" class="iphone-icon">
+        <section class="app-showcase tracker-showcase" id="tracker">
+            <div class="app-copy">
+                <div class="app-title-row">
+                    <img src="pickleball_tracker_splash_icon.png" alt="Pickleball Tracker app icon" class="app-icon">
+                    <div>
+                        <p class="eyebrow">Available Now</p>
+                        <h2>Pickleball Tracker</h2>
                     </div>
-                    <h3>iPhone App</h3>
-                    <p>Track games, manage players, and view detailed stats</p>
                 </div>
-                <div class="device-item">
-                    <div class="device-icon">
-                        <img src="pickleball_tracker_apple_watch.png" alt="Pickleball Tracker on Apple Watch" class="watch-icon">
-                    </div>
-                    <h3>Watch App</h3>
-                    <p>Quick game entry right from your wrist</p>
-                </div>
+                <h3>Play. Track. Improve. Repeat.</h3>
+                <p>Pickleball Tracker makes it easy to log games, track wins and losses, remember teammates and opponents, and understand how your game is improving over time.</p>
+                <ul class="feature-list">
+                    <li>Log matches from iPhone or Apple Watch</li>
+                    <li>Track your record, scoring trends, players, and history</li>
+                    <li>Unlock achievements and keep a personal pickleball journal</li>
+                    <li>Use insights to make smarter decisions on court</li>
+                </ul>
+                <a href="https://apps.apple.com/us/app/pickleball-tracker/id6744275703" class="store-link">
+                    <img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg" alt="Download Pickleball Tracker on the App Store" class="app-store-badge">
+                </a>
             </div>
-        </div>
-        <div class="features">
-            <div class="feature-card">
-                <h3>Insights That Help You Improve</h3>
-                <p>See win rate, point margin, scoring trends, close games, and more—so you know what to focus on next.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Top Players + Player Profiles</h3>
-                <p>Find your best teammates and toughest opponents, and view performance profiles for other players—perfect for spotting patterns and matchups.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Fast, Fun, and Built for the Court</h3>
-                <p>Track games on iPhone or Apple Watch, keep a full history, and celebrate wins with fun animations and badges along the way.</p>
-            </div>
-        </div>
-        
-        <section class="content-section testimonial">
-            <h2>Players are loving it</h2>
-            <blockquote>
-                “I like to leave my iPhone in my racket bag, so the Apple Watch App is awesome and super easy to use.”
-                <span class="quote-attrib">— App Store review</span>
-            </blockquote>
-            <p class="center">
-                <a class="cta-secondary" href="https://apps.apple.com/us/app/pickleball-tracker/id6744275703">See Pickleball Tracker on the App Store</a>
-            </p>
-        </section>
-
-        <section id="community" class="content-section community">
-            <h2>You’re not just a download—you’re part of the community</h2>
-            <p>Pickleball Tracker is built with passion and shaped by real players. If you have an idea, a feature request, or a small frustration, I want to hear it—and I respond.</p>
-            <div class="community-links">
-                <a class="cta-secondary" href="feedback.html">Send feedback</a>
-                <a class="cta-secondary" href="support.html">Get support</a>
-            </div>
-            <p class="small">Thanks for helping make Pickleball Tracker better for everyone.</p>
-        </section>
-
-        <section class="screenshots">
-             <div class="screenshot">
-                <img src="1.png" alt="Game Setup - Easy team picker and score keeper">
-            </div>
-                <div class="screenshot">
-                <img src="2.png" alt="Apple Watch Companion - Store your phone in your bag">
-            </div>
-            <div class="screenshot">
-                <img src="3.png" alt="Insights - Full insights into your game">
-            </div>
-            <div class="screenshot">
-                <img src="4.png" alt="Win/Loss - See your win/loss progress trends">
-            </div>
-            <div class="screenshot">
-                <img src="5.png" alt="My Performance - Key performance metrics and trends">
-            </div>
-               <div class="screenshot">
-                <img src="6.png" alt="Top Players - Best teammates and toughest opponents">
-            </div>
-              <div class="screenshot">
-                <img src="7.png" alt="Consistency - Shows your consistency"> 
-            </div>
-            <div class="screenshot">
-                <img src="8.png" alt="Badges - Earn badges as you play"> 
-            </div>
-            <div class="screenshot">
-                <img src="9.png" alt="Game History - Full history of your games"> 
-            </div>
-            <div class="screenshot">
-                <img src="10.png" alt="Players - Stores your player list"> 
+            <div class="phone-gallery">
+                <img src="1.png" alt="Pickleball Tracker game setup">
+                <img src="3.png" alt="Pickleball Tracker insights">
+                <img src="8.png" alt="Pickleball Tracker badges">
             </div>
         </section>
 
-        <section class="content-section">
-            <h2>Bonus: Pickleball Tournament Manager</h2>
-            <p>Running a mini tournament, round robin, or partner rotation with friends? Use the free Tournament Manager to create brackets, enter scores, and keep things organized—right in your browser.</p>
-            <ul class="feature-list">
-                <li><strong>Singles, Doubles, and Partner Rotation</strong></li>
-                <li><strong>Single Elimination</strong> and <strong>Round Robin</strong> formats</li>
-                <li>Enter scores as you go—winners advance automatically</li>
-                <li>Saves locally in your browser (no account needed)</li>
-            </ul>
-            <p class="center">
-                <a class="cta-secondary" href="pbm.html">Open Tournament Manager</a>
-                <a class="cta-secondary" href="pbm-instructions.html">How it works</a>
-            </p>
+        <section class="split-section">
+            <div class="content-card">
+                <h2>Which app should I use?</h2>
+                <p><strong>Use PaddleUp before you play</strong> when you want to find players, create a match, or coordinate court details.</p>
+                <p><strong>Use Pickleball Tracker after you play</strong> when you want to record the result, remember who played, and see your progress.</p>
+            </div>
+            <div class="content-card">
+                <h2>Built for real pickleball communities</h2>
+                <p>These apps were built around the everyday rhythm of pickleball: finding players, getting a court, playing the match, and learning from every game.</p>
+            </div>
         </section>
+    </main>
 
-        <footer>
-            <p>&copy; 2026 David Lewis. All rights reserved.</p>
-        </footer>
-    </div>
+    <footer>
+        <p>&copy; 2026 David Lewis. All rights reserved.</p>
+    </footer>
 </body>
-</html> 
+</html>
